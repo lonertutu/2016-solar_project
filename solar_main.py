@@ -8,7 +8,7 @@ from solar_model import recalculate_space_objects_positions
 from solar_input import write_space_objects_data_to_file,read_space_objects_data_from_file
 
 perform_execution = False
-"""Флаг цикличности выполнения расчёта!!!!!!!!!!!"""
+"""Флаг цикличности выполнения расчёта"""
 
 physical_time = 0
 """Физическое время от начала расчёта.
