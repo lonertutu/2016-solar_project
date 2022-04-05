@@ -30,14 +30,18 @@ def move_space_object(body, dt):
      :param body: тело, которое нужно переместить.
      :param dt: время действия силы
     """
+    if body.m == 0:
+        ax = 0
+        ay = 0
+    else:
+        ax = body.Fx / body.m
+        ay = body.Fy / body.m
 
-    ax = body.Fx/body.m
     body.x += (body.Vx * dt + ax * dt * dt / 2)
-    body.Vx += ax*dt
+    body.Vx += ax * dt
 
-    ay = body.Fy/body.m
     body.y += (body.Vy * dt + ay * dt * dt / 2)
-    body.Vy += ay*dt
+    body.Vy += ay * dt
 
 
 def recalculate_space_objects_positions(space_objects, dt):
