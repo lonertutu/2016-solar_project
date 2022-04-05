@@ -39,7 +39,6 @@ def scale_x(x, max_distance):
 
     **x** — x-координата модели.
     """
-
     return int(x * factor) + window_width // 2
 
 
