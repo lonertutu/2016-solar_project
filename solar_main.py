@@ -8,7 +8,7 @@ from solar_model import *
 from solar_input import *
 
 perform_execution = False
-"""Флаг цикличности выполнения расчёта"""
+"""Флаг цикличности выполнения расчёта!!!!!!!!!!!"""
 
 physical_time = 0
 """Физическое время от начала расчёта.
