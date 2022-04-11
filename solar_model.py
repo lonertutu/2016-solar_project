@@ -34,11 +34,12 @@ def move_space_object(body, dt):
         ax = body.Fx / body.m
         ay = body.Fy / body.m
 
-    body.Vx += ax * dt
-    body.x += body.Vx * dt
+    if body.type != "star":
+        body.Vx += ax * dt
+        body.x += body.Vx * dt
 
-    body.Vy += ay * dt
-    body.y += body.Vy * dt
+        body.Vy += ay * dt
+        body.y += body.Vy * dt
 
 
 def recalculate_space_objects_positions(space_objects, dt):
