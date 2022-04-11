@@ -1,6 +1,3 @@
-# coding: utf-8
-# license: GPLv3
-
 import tkinter
 import solar_vis as vis
 from tkinter.filedialog import askopenfilename, asksaveasfilename
