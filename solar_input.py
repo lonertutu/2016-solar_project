@@ -15,13 +15,12 @@ def read_space_objects_data_from_file(input_filename):
     with open(input_filename) as input_file:
         for line in input_file:
             if len(line.strip()) == 0 or line[0] == '#':
-                continue  # пустые строки и строки-комментарии пропускаем
+                continue
             object_type = line.split()[0].lower()
             if object_type == "star":
                 star = Star()
                 parse_star_parameters(line, star)
                 objects.append(star)
-                # доделал функцию
             elif object_type == "planet":
                 planet = Planet()
                 parse_planet_parameters(line, planet)

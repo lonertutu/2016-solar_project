@@ -5,7 +5,7 @@ import tkinter
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 from solar_vis import calculate_scale_factor, create_star_image, create_planet_image, update_object_position, window_height, window_width
 from solar_model import recalculate_space_objects_positions
-from solar_input import write_space_objects_data_to_file,read_space_objects_data_from_file
+from solar_input import write_space_objects_data_to_file, read_space_objects_data_from_file
 
 perform_execution = False
 """Флаг цикличности выполнения расчёта"""
