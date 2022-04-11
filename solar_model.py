@@ -27,19 +27,26 @@ def move_space_object(body, dt):
      :param body: тело, которое нужно переместить.
      :param dt: время действия силы
     """
-    if body.m == 0:
-        ax = 0
-        ay = 0
-    else:
-        ax = body.Fx / body.m
-        ay = body.Fy / body.m
+    try:
+        if dt > 900000:
+            raise ValueError(
+                "слишком большое dt, dt = " + str(dt) + ", уменьшите значение до 900000 в левом нижнем углу")
+        if body.m == 0:
+            ax = 0
+            ay = 0
+        else:
+            ax = body.Fx / body.m
+            ay = body.Fy / body.m
 
-    if body.type != "star":
-        body.Vx += ax * dt
-        body.x += body.Vx * dt
+        if body.type != "star":
+            body.Vx += ax * dt
+            body.x += body.Vx * dt
 
-        body.Vy += ay * dt
-        body.y += body.Vy * dt
+            body.Vy += ay * dt
+            body.y += body.Vy * dt
+    except ValueError as e:
+        print(e)
+        exit()
 
 
 def recalculate_space_objects_positions(space_objects, dt):
