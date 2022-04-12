@@ -1,12 +1,11 @@
-# Гравитационная постоянная Ньютона G
 GRAVITATION_CONSTANT = 6.67408E-11
 
 
 def calculate_force(body, space_objects):
     """
-     функция вычисляет силу, действующую на тело.
-     :param body: тело, для которого нужно вычислить дейстующую силу.
-     :param space_objects: список объектов, которые воздействуют на тело.
+     Calculate acting force
+     :param body: the body to be moved by force
+     :param space_objects: list of objects
      """
 
     body.Fx = 0
@@ -23,14 +22,14 @@ def calculate_force(body, space_objects):
 
 def move_space_object(body, dt):
     """
-     функция перемещает тело в соответствии с действующей на него силой.
-     :param body: тело, которое нужно переместить.
-     :param dt: время действия силы
+     Function moves the body in accordance with the force acting on it.
+     :param body: the body to be moved
+     :param dt: duration of the force
     """
     try:
         if dt > 900000:
             raise ValueError(
-                "слишком большое dt, dt = " + str(dt) + ", уменьшите значение до 900000 в левом нижнем углу")
+                "Too big dt, dt = " + str(dt) + ", please, reudce value to 900000 with left down corner")
         if body.m == 0:
             ax = 0
             ay = 0
@@ -51,9 +50,9 @@ def move_space_object(body, dt):
 
 def recalculate_space_objects_positions(space_objects, dt):
     """
-     функция пересчитывает координаты объектов.
-     :space_objects: список оьъектов, для которых нужно пересчитать координаты.
-     :dt: шаг по времени
+    Recalculate the coordinates
+     :space_objects: a list of objects for which you need to recalculate the coordinates
+     :dt: time step
     """
 
     for body in space_objects:
