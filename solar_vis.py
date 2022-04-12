@@ -40,8 +40,8 @@ def scale_y(y):
 def create_star_image(space, star):
     """Create the star object.
 
-    param: x,y - coordinates after scaling
-    param: r - radius of the star
+    :param: x,y - coordinates after scaling
+    :param: r - radius of the star
     """
     x = scale_x(star.x)
     y = scale_y(star.y)
@@ -52,8 +52,8 @@ def create_star_image(space, star):
 def create_planet_image(space, planet):
     """Create the planet object.
 
-    param: x,y - coordinates after scaling
-    param: r - radius of the planet
+    :param: x,y - coordinates after scaling
+    :param: r - radius of the planet
     """
     x = scale_x(planet.x)
     y = scale_y(planet.y)
@@ -64,8 +64,8 @@ def create_planet_image(space, planet):
 def update_system_name(space, system_name):
     """Create text with name of objects
 
-    param: space — canvas
-    param: system_name
+    :param: space — canvas
+    :param: system_name
     """
     space.create_text(30, 80, tag="header", text=system_name, font=header_font)
 
@@ -73,8 +73,8 @@ def update_system_name(space, system_name):
 def update_object_position(space, body):
     """Moves objects
 
-    param: space — canvas
-    param: body - the object need to replace
+    :param: space — canvas
+    :param: body - the object need to replace
     """
     x = scale_x(body.x)
     y = scale_y(body.y)

@@ -3,9 +3,8 @@ from solar_objects import Star, Planet
 
 def read_space_objects_data_from_file(input_filename):
     """
-     функция считывает данные о космических объектах из файла, создаёт сами объекты
-    и вызывает создание их графических образов
-     :param input_filename: имя входного файла
+    Read data about objects
+     :param input_filename: name of inputting file
     """
 
     objects = []
@@ -30,14 +29,11 @@ def read_space_objects_data_from_file(input_filename):
 
 def parse_star_parameters(line, star):
     """
-     Считывает данные о звезде из строки.
-    Входная строка должна иметь слеюущий формат:
-    Star <радиус в пикселах> <цвет> <масса> <x> <y> <Vx> <Vy>
-    Здесь (x, y) — координаты зведы, (Vx, Vy) — скорость.
-    Пример строки:
-    Star 10 red 1000 1 2 3 4
-     :param line: строка с описание звезды.
-     :param star: объект звезды.
+    Read the parameters of each planet in a file with the following structure:
+    Star <radius in pixels> <color> <mass> <x> <y> <Vx> <Vy>
+
+     :param line: string with description of the star.
+     :param star: star object
     """
     star.R = int(line.split()[1])
     star.color = line.split()[2]
@@ -50,14 +46,11 @@ def parse_star_parameters(line, star):
 
 def parse_planet_parameters(line, planet):
     """
-     Считывает данные о звезде из строки.
-    Входная строка должна иметь слеюущий формат:
-    Star <радиус в пикселах> <цвет> <масса> <x> <y> <Vx> <Vy>
-    Здесь (x, y) — координаты зведы, (Vx, Vy) — скорость.
-    Пример строки:
-    Star 10 red 1000 1 2 3 4
-     :param line: строка с описание звезды.
-     :param planet: объект звезды.
+    Read the parameters of each planet in a file with the following structure:
+    Planet <radius in pixels> <color> <mass> <x> <y> <Vx> <Vy>.
+
+     :param line: string with description of the planet.
+     :param planet: planet object
     """
     planet.R = int(line.split()[1])
     planet.color = line.split()[2]
@@ -70,12 +63,12 @@ def parse_planet_parameters(line, planet):
 
 def write_space_objects_data_to_file(output_filename, space_objects):
     """
-    Сохраняет данные о космических объектах в файл.
-    Строки должны иметь следующий формат:
-    Star <радиус в пикселах> <цвет> <масса> <x> <y> <Vx> <Vy>
-    Planet <радиус в пикселах> <цвет> <масса> <x> <y> <Vx> <Vy>
-     :param output_filename: имя входного файла
-     :param space_objects: список объектов планет и звёзд
+    Saves the parameters of each object in a file with the following structure:
+    Star <radius in pixels> <color> <mass> <x> <y> <Vx> <Vy>,
+    Planet <radius in pixels> <color> <mass> <x> <y> <Vx> <Vy>.
+
+     :param output_filename: name of inputting file
+     :param space_objects: list of objects
     """
     out_file = open(output_filename, 'w')
     for obj in space_objects:
@@ -86,12 +79,12 @@ def write_space_objects_data_to_file(output_filename, space_objects):
 
 def statistics(output_filename, space_objects, time):
     """
-    при необходимости сохраняет параметры каждого объекта в файле следующей структуры:
+    Saves the parameters of each object in a file with the following structure:
     Star <radius in pixels> <color> <mass> <x> <y> <Vx> <Vy>,
     Planet <radius in pixels> <color> <mass> <x> <y> <Vx> <Vy>.
-    :param output_filename: имя получаемого файла
-    :param space_objects: список объектов, параметры которых мы записываем в файл
-    :param time: расчетное время до момента, когда пользователь попросит сохранить параметры в файл
+
+    :param output_filename: name of inputting file
+    :param space_objects: list of objects
     """
     count = 0
     with open(output_filename, "w") as out_file:
