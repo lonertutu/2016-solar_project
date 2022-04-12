@@ -1,4 +1,5 @@
 import tkinter
+from tkinter import NW
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 
 import solar_input as inputing
@@ -94,29 +95,35 @@ def main():
     root = tkinter.Tk()
     space = tkinter.Canvas(root, width=vis.window_width, height=vis.window_height, bg="black")
     space.pack(side=tkinter.TOP)
-    frame = tkinter.Frame(root)
+
+    picture = tkinter.PhotoImage(file='cosmo.png')
+    space.create_image(20, 20, anchor=NW, image=picture)
+
+    frame = tkinter.Frame(root, bg='#565f9c')
     frame.pack(side=tkinter.BOTTOM)
 
-    start_button = tkinter.Button(frame, text="Start", command=start_execution, width=6)
+    start_button = tkinter.Button(frame, text="Start", command=start_execution, width=6, bg='#565f9c')
     start_button.pack(side=tkinter.LEFT)
 
     time_step = tkinter.DoubleVar()
     time_step.set(1)
-    time_step_entry = tkinter.Entry(frame, textvariable=time_step)
+    time_step_entry = tkinter.Entry(frame, textvariable=time_step, bg='#3a3d78')
     time_step_entry.pack(side=tkinter.LEFT)
 
     time_speed = tkinter.DoubleVar()
-    scale = tkinter.Scale(frame, variable=time_speed, orient=tkinter.HORIZONTAL)
+    scale = tkinter.Scale(frame, variable=time_speed, orient=tkinter.HORIZONTAL, highlightcolor='#565f9c',
+                          highlightbackground='#565f9c', bg='#3a3d78', activebackground='#565f9c',
+                          troughcolor='#565f9c')
     scale.pack(side=tkinter.LEFT)
 
-    load_file_button = tkinter.Button(frame, text="Open file...", command=open_file_dialog)
+    load_file_button = tkinter.Button(frame, text="Open file...", command=open_file_dialog, bg='#565f9c')
     load_file_button.pack(side=tkinter.LEFT)
-    save_file_button = tkinter.Button(frame, text="Save to file...", command=save_file_dialog)
+    save_file_button = tkinter.Button(frame, text="Save to file...", command=save_file_dialog, bg='#565f9c')
     save_file_button.pack(side=tkinter.LEFT)
 
     displayed_time = tkinter.StringVar()
     displayed_time.set(str(physical_time) + " seconds gone")
-    time_label = tkinter.Label(frame, textvariable=displayed_time, width=30)
+    time_label = tkinter.Label(frame, textvariable=displayed_time, width=30, bg='#3a3d78')
     time_label.pack(side=tkinter.RIGHT)
 
     root.mainloop()
