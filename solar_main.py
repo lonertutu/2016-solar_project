@@ -13,7 +13,7 @@ time_step = None
 space_objects = []
 
 
-def execution():
+def execution(scale_factor):
     """
     It is executed cyclically, causing the processing of all celestial bodies, updating their position on the screen.
     """
@@ -21,15 +21,15 @@ def execution():
     global displayed_time
     model.recalculate_space_objects_positions(space_objects, time_step.get())
     for body in space_objects:
-        vis.update_object_position(space, body)
+        vis.update_object_position(space, body, scale_factor)
     physical_time += time_step.get()
     displayed_time.set("%.1f" % physical_time + " seconds gone")
 
     if perform_execution:
-        space.after(101 - int(time_speed.get()), execution)
+        space.after(101 - int(time_speed.get()), lambda: execution(scale_factor))
 
 
-def start_execution():
+def start_execution(scale_factor):
     """Click event handler for the Start button.
     Starts the cyclic execution of the execution function.
     """
@@ -38,22 +38,22 @@ def start_execution():
     start_button['text'] = "Pause"
     start_button['command'] = stop_execution
 
-    execution()
+    execution(scale_factor)
     print('Started execution...')
 
 
-def stop_execution():
+def stop_execution(scale_factor):
     """Click event handler for the Start button.
     Finishes the cyclic execution of the execution function.
     """
     global perform_execution
     perform_execution = False
     start_button['text'] = "Start"
-    start_button['command'] = start_execution
+    start_button['command'] = lambda: start_execution(scale_factor)
     print('Paused execution.')
 
 
-def open_file_dialog():
+def open_file_dialog(scale_factor):
     """
     Open dialog window, help to choose file, read the parameters
     """
@@ -65,13 +65,13 @@ def open_file_dialog():
     in_filename = askopenfilename(filetypes=(("Text file", ".txt"),))
     space_objects = inputing.read_space_objects_data_from_file(in_filename)
     max_distance = max([max(abs(obj.x), abs(obj.y)) for obj in space_objects])
-    vis.calculate_scale_factor(max_distance)
+    vis.calculate_scale_factor(max_distance, scale_factor)
 
     for obj in space_objects:
         if obj.type == 'star':
-            vis.create_star_image(space, obj)
+            vis.create_star_image(space, obj, scale_factor)
         elif obj.type == 'planet':
-            vis.create_planet_image(space, obj)
+            vis.create_planet_image(space, obj, scale_factor)
         else:
             raise AssertionError()
 
@@ -84,16 +84,21 @@ def save_file_dialog():
     inputing.write_space_objects_data_to_file(out_filename, space_objects)
 
 
-def main():
+def main(scale_factor):
     """
     Create graphic objects from tkinter: window, canvas, buttons
     """
-    global physical_time, displayed_time, time_step, time_speed, space, start_button
+    global physical_time
+    global displayed_time
+    global time_step
+    global time_speed
+    global space
+    global start_button
 
     physical_time = 0
 
     root = tkinter.Tk()
-    space = tkinter.Canvas(root, width=vis.window_width, height=vis.window_height, bg="black")
+    space = tkinter.Canvas(root, width=vis.WINDOW_WIDTH, height=vis.WINDOW_HEIGHT, bg="black")
     space.pack(side=tkinter.TOP)
 
     picture = tkinter.PhotoImage(file='cosmo.png')
@@ -102,7 +107,7 @@ def main():
     frame = tkinter.Frame(root, bg='#565f9c')
     frame.pack(side=tkinter.BOTTOM)
 
-    start_button = tkinter.Button(frame, text="Start", command=start_execution, width=6, bg='#565f9c')
+    start_button = tkinter.Button(frame, text="Start", command= lambda: start_execution(scale_factor), width=6, bg='#565f9c')
     start_button.pack(side=tkinter.LEFT)
 
     time_step = tkinter.DoubleVar()
@@ -116,9 +121,9 @@ def main():
                           troughcolor='#565f9c')
     scale.pack(side=tkinter.LEFT)
 
-    load_file_button = tkinter.Button(frame, text="Open file...", command=open_file_dialog, bg='#565f9c')
+    load_file_button = tkinter.Button(frame, text="Open file...", command= lambda: open_file_dialog(scale_factor), bg='#565f9c')
     load_file_button.pack(side=tkinter.LEFT)
-    save_file_button = tkinter.Button(frame, text="Save to file...", command=save_file_dialog, bg='#565f9c')
+    save_file_button = tkinter.Button(frame, text="Save to file...", command= save_file_dialog, bg='#565f9c')
     save_file_button.pack(side=tkinter.LEFT)
 
     displayed_time = tkinter.StringVar()
@@ -130,4 +135,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    scale_factor = vis.Scale_factor_in_class()
+    main(scale_factor)
