@@ -19,7 +19,7 @@ def calculate_force(body, space_objects):
         body.Fx += (GRAVITATION_CONSTANT * (body.m * obj.m) / r ** 3 * rx)
         body.Fy += (GRAVITATION_CONSTANT * (body.m * obj.m) / r ** 3 * ry)
 
-
+#
 def move_space_object(body, dt):
     """
      Function moves the body in accordance with the force acting on it.

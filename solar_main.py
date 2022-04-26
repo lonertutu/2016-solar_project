@@ -28,7 +28,7 @@ def execution(scale_factor):
     if perform_execution:
         space.after(101 - int(time_speed.get()), lambda: execution(scale_factor))
 
-
+#
 def start_execution(scale_factor):
     """Click event handler for the Start button.
     Starts the cyclic execution of the execution function.
