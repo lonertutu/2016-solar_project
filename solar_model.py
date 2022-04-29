@@ -59,7 +59,7 @@ def recalculate_space_objects_positions(space_objects, dt):
         calculate_force(body, space_objects)
     for body in space_objects:
         move_space_object(body, dt)
-
+    return space_objects
 
 if __name__ == "__main__":
     print("This module is not for direct call!")

@@ -1,0 +1,48 @@
+Index: solar_objects.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>class Star:\r\n    \"\"\"Describes the star.\r\n    Contains the mass, coordinates, speed of the star,\r\n    as well as the visual radius of the star in pixels and its color.\r\n    \"\"\"\r\n\r\n    type = \"star\"\r\n    mass = 0\r\n    x = 0\r\n    y = 0\r\n    Vx = 0\r\n    Vy = 0\r\n    Fx = 0\r\n    Fy = 0\r\n    R = 5\r\n    color = \"red\"\r\n    image = None\r\n\r\n\r\nclass Planet(Star):\r\n    \"\"\"Describes the planet.\"\"\"\r\n    type = \"planet\"\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/solar_objects.py b/solar_objects.py
+--- a/solar_objects.py	(revision 22d478ed4efbdf6977dbfedf274ce26e9c9405aa)
++++ b/solar_objects.py	(date 1651263295098)
+@@ -4,7 +4,7 @@
+     as well as the visual radius of the star in pixels and its color.
+     """
+ 
+-    type = "star"
++
+     mass = 0
+     x = 0
+     y = 0
+@@ -15,8 +15,9 @@
+     R = 5
+     color = "red"
+     image = None
++    type = 'star'
+ 
+ 
+ class Planet(Star):
+     """Describes the planet."""
+-    type = "planet"
++    type = 'planet'
+Index: solar_vis.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\"\"\"Visualization module.\"\"\"\r\n\r\nheader_font = \"Arial-16\"\r\nWINDOW_WIDTH = 600\r\nWINDOW_HEIGHT = 600\r\n\r\n\r\nclass Scale_factor_in_class:\r\n    value = None\r\n\r\n\r\n\"\"\"Scaling of screen coordinates in relation to physical ones.\r\nType: float\r\nMeasure: number of pixels per meter.\"\"\"\r\n\r\n#\r\ndef calculate_scale_factor(max_distance, scale_factor):\r\n    \"\"\"\r\n    Count scale_factor using height,width\r\n    \"\"\"\r\n    scale_factor.value = 0.4 * min(WINDOW_HEIGHT, WINDOW_WIDTH) / max_distance\r\n    print('Scale factor:', scale_factor)\r\n\r\n\r\ndef scale_x(x, scale_factor):\r\n    \"\"\"\r\n    Returns the screen **x** coordinate given the **x** coordinate of the model.\r\n\r\n    return: int value\r\n    \"\"\"\r\n    return int(x * scale_factor.value) + WINDOW_WIDTH // 2\r\n\r\n\r\ndef scale_y(y, scale_factor):\r\n    \"\"\"\r\n    Returns the screen **y** coordinate given the **y** coordinate of the model.\r\n\r\n    return: int value\r\n    \"\"\"\r\n    return int(y * scale_factor.value) + WINDOW_HEIGHT // 2\r\n\r\n\r\ndef create_star_image(space, star, scale_factor):\r\n    \"\"\"Create the star object.\r\n\r\n    :param: x,y - coordinates after scaling\r\n    :param: r - radius of the star\r\n    \"\"\"\r\n    x = scale_x(star.x, scale_factor)\r\n    y = scale_y(star.y, scale_factor)\r\n    r = star.R\r\n    star.image = space.create_oval([x - r, y - r], [x + r, y + r], fill=star.color)\r\n\r\n\r\ndef create_planet_image(space, planet, scale_factor):\r\n    \"\"\"Create the planet object.\r\n\r\n    :param: x,y - coordinates after scaling\r\n    :param: r - radius of the planet\r\n    \"\"\"\r\n    x = scale_x(planet.x, scale_factor)\r\n    y = scale_y(planet.y, scale_factor)\r\n    r = planet.R\r\n    planet.image = space.create_oval([x - r, y - r], [x + r, y + r], fill=planet.color)\r\n\r\n\r\ndef update_system_name(space, system_name):\r\n    \"\"\"Create text with name of objects\r\n\r\n    :param: space — canvas\r\n    :param: system_name\r\n    \"\"\"\r\n    space.create_text(30, 80, tag=\"header\", text=system_name, font=header_font)\r\n\r\n\r\ndef update_object_position(space, body, scale_factor):\r\n    \"\"\"Moves objects\r\n\r\n    :param: space — canvas\r\n    :param: body - the object need to replace\r\n    \"\"\"\r\n    x = scale_x(body.x, scale_factor)\r\n    y = scale_y(body.y, scale_factor)\r\n    r = body.R\r\n    if x + r < 0 or x - r > WINDOW_WIDTH or y + r < 0 or y - r > WINDOW_HEIGHT:\r\n        space.coords(body.image, WINDOW_WIDTH + r, WINDOW_HEIGHT + r,\r\n                     WINDOW_WIDTH + 2 * r, WINDOW_HEIGHT + 2 * r)  # положить за пределы окна\r\n    space.coords(body.image, x - r, y - r, x + r, y + r)\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    print(\"This module is not for direct call!\")\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/solar_vis.py b/solar_vis.py
+--- a/solar_vis.py	(revision 22d478ed4efbdf6977dbfedf274ce26e9c9405aa)
++++ b/solar_vis.py	(date 1651257741202)
+@@ -13,7 +13,6 @@
+ Type: float
+ Measure: number of pixels per meter."""
+ 
+-#
+ def calculate_scale_factor(max_distance, scale_factor):
+     """
+     Count scale_factor using height,width
