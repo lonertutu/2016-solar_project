@@ -1,0 +1,1346 @@
+Index: solar_model.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>GRAVITATION_CONSTANT = 6.67408E-11\r\n\r\n\r\ndef calculate_force(body, space_objects):\r\n    \"\"\"\r\n     Calculate acting force\r\n     :param body: the body to be moved by force\r\n     :param space_objects: list of objects\r\n     \"\"\"\r\n\r\n    body.Fx = 0\r\n    body.Fy = 0\r\n    for obj in space_objects:\r\n        if body == obj:\r\n            continue\r\n        rx = (obj.x - body.x)\r\n        ry = (obj.y - body.y)\r\n        r = (rx ** 2 + ry ** 2) ** 0.5\r\n        body.Fx += (GRAVITATION_CONSTANT * (body.m * obj.m) / r ** 3 * rx)\r\n        body.Fy += (GRAVITATION_CONSTANT * (body.m * obj.m) / r ** 3 * ry)\r\n\r\n#\r\ndef move_space_object(body, dt):\r\n    \"\"\"\r\n     Function moves the body in accordance with the force acting on it.\r\n     :param body: the body to be moved\r\n     :param dt: duration of the force\r\n    \"\"\"\r\n    try:\r\n        if dt > 900000:\r\n            raise ValueError(\r\n                \"Too big dt, dt = \" + str(dt) + \", please, reudce value to 900000 with left down corner\")\r\n        if body.m == 0:\r\n            ax = 0\r\n            ay = 0\r\n        else:\r\n            ax = body.Fx / body.m\r\n            ay = body.Fy / body.m\r\n\r\n        if body.type != \"star\":\r\n            body.Vx += ax * dt\r\n            body.x += body.Vx * dt\r\n\r\n            body.Vy += ay * dt\r\n            body.y += body.Vy * dt\r\n    except ValueError as e:\r\n        print(e)\r\n        exit()\r\n\r\n\r\ndef recalculate_space_objects_positions(space_objects, dt):\r\n    \"\"\"\r\n    Recalculate the coordinates\r\n     :space_objects: a list of objects for which you need to recalculate the coordinates\r\n     :dt: time step\r\n    \"\"\"\r\n\r\n    for body in space_objects:\r\n        calculate_force(body, space_objects)\r\n    for body in space_objects:\r\n        move_space_object(body, dt)\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    print(\"This module is not for direct call!\")\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/solar_model.py b/solar_model.py
+--- a/solar_model.py	(revision 22d478ed4efbdf6977dbfedf274ce26e9c9405aa)
++++ b/solar_model.py	(date 1651265853591)
+@@ -59,7 +59,7 @@
+         calculate_force(body, space_objects)
+     for body in space_objects:
+         move_space_object(body, dt)
+-
++    return space_objects
+ 
+ if __name__ == "__main__":
+     print("This module is not for direct call!")
+Index: solar_main.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import tkinter\r\nfrom tkinter import NW\r\nfrom tkinter.filedialog import askopenfilename, asksaveasfilename\r\n\r\nimport solar_input as inputing\r\nimport solar_model as model\r\nimport solar_vis as vis\r\n\r\nperform_execution = False\r\nphysical_time = 0\r\ndisplayed_time = None\r\ntime_step = None\r\nspace_objects = []\r\n\r\n\r\ndef execution(scale_factor):\r\n    \"\"\"\r\n    It is executed cyclically, causing the processing of all celestial bodies, updating their position on the screen.\r\n    \"\"\"\r\n    global physical_time\r\n    global displayed_time\r\n    model.recalculate_space_objects_positions(space_objects, time_step.get())\r\n    for body in space_objects:\r\n        vis.update_object_position(space, body, scale_factor)\r\n    physical_time += time_step.get()\r\n    displayed_time.set(\"%.1f\" % physical_time + \" seconds gone\")\r\n\r\n    if perform_execution:\r\n        space.after(101 - int(time_speed.get()), lambda: execution(scale_factor))\r\n\r\n#\r\ndef start_execution(scale_factor):\r\n    \"\"\"Click event handler for the Start button.\r\n    Starts the cyclic execution of the execution function.\r\n    \"\"\"\r\n    global perform_execution\r\n    perform_execution = True\r\n    start_button['text'] = \"Pause\"\r\n    start_button['command'] = stop_execution\r\n\r\n    execution(scale_factor)\r\n    print('Started execution...')\r\n\r\n\r\ndef stop_execution(scale_factor):\r\n    \"\"\"Click event handler for the Start button.\r\n    Finishes the cyclic execution of the execution function.\r\n    \"\"\"\r\n    global perform_execution\r\n    perform_execution = False\r\n    start_button['text'] = \"Start\"\r\n    start_button['command'] = lambda: start_execution(scale_factor)\r\n    print('Paused execution.')\r\n\r\n\r\ndef open_file_dialog(scale_factor):\r\n    \"\"\"\r\n    Open dialog window, help to choose file, read the parameters\r\n    \"\"\"\r\n    global space_objects\r\n    global perform_execution\r\n    perform_execution = False\r\n    for obj in space_objects:\r\n        space.delete(obj.image)  # удаление старых изображений планет\r\n    in_filename = askopenfilename(filetypes=((\"Text file\", \".txt\"),))\r\n    space_objects = inputing.read_space_objects_data_from_file(in_filename)\r\n    max_distance = max([max(abs(obj.x), abs(obj.y)) for obj in space_objects])\r\n    vis.calculate_scale_factor(max_distance, scale_factor)\r\n\r\n    for obj in space_objects:\r\n        if obj.type == 'star':\r\n            vis.create_star_image(space, obj, scale_factor)\r\n        elif obj.type == 'planet':\r\n            vis.create_planet_image(space, obj, scale_factor)\r\n        else:\r\n            raise AssertionError()\r\n\r\n\r\ndef save_file_dialog():\r\n    \"\"\"\r\n    Open dialog window, help to choose file, save the parameters\r\n    \"\"\"\r\n    out_filename = asksaveasfilename(filetypes=((\"Text file\", \".txt\"),))\r\n    inputing.write_space_objects_data_to_file(out_filename, space_objects)\r\n\r\n\r\ndef main(scale_factor):\r\n    \"\"\"\r\n    Create graphic objects from tkinter: window, canvas, buttons\r\n    \"\"\"\r\n    global physical_time\r\n    global displayed_time\r\n    global time_step\r\n    global time_speed\r\n    global space\r\n    global start_button\r\n\r\n    physical_time = 0\r\n\r\n    root = tkinter.Tk()\r\n    space = tkinter.Canvas(root, width=vis.WINDOW_WIDTH, height=vis.WINDOW_HEIGHT, bg=\"black\")\r\n    space.pack(side=tkinter.TOP)\r\n\r\n    picture = tkinter.PhotoImage(file='cosmo.png')\r\n    space.create_image(20, 20, anchor=NW, image=picture)\r\n\r\n    frame = tkinter.Frame(root, bg='#565f9c')\r\n    frame.pack(side=tkinter.BOTTOM)\r\n\r\n    start_button = tkinter.Button(frame, text=\"Start\", command= lambda: start_execution(scale_factor), width=6, bg='#565f9c')\r\n    start_button.pack(side=tkinter.LEFT)\r\n\r\n    time_step = tkinter.DoubleVar()\r\n    time_step.set(1)\r\n    time_step_entry = tkinter.Entry(frame, textvariable=time_step, bg='#3a3d78')\r\n    time_step_entry.pack(side=tkinter.LEFT)\r\n\r\n    time_speed = tkinter.DoubleVar()\r\n    scale = tkinter.Scale(frame, variable=time_speed, orient=tkinter.HORIZONTAL, highlightcolor='#565f9c',\r\n                          highlightbackground='#565f9c', bg='#3a3d78', activebackground='#565f9c',\r\n                          troughcolor='#565f9c')\r\n    scale.pack(side=tkinter.LEFT)\r\n\r\n    load_file_button = tkinter.Button(frame, text=\"Open file...\", command= lambda: open_file_dialog(scale_factor), bg='#565f9c')\r\n    load_file_button.pack(side=tkinter.LEFT)\r\n    save_file_button = tkinter.Button(frame, text=\"Save to file...\", command= save_file_dialog, bg='#565f9c')\r\n    save_file_button.pack(side=tkinter.LEFT)\r\n\r\n    displayed_time = tkinter.StringVar()\r\n    displayed_time.set(str(physical_time) + \" seconds gone\")\r\n    time_label = tkinter.Label(frame, textvariable=displayed_time, width=30, bg='#3a3d78')\r\n    time_label.pack(side=tkinter.RIGHT)\r\n\r\n    root.mainloop()\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    scale_factor = vis.Scale_factor_in_class()\r\n    main(scale_factor)\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/solar_main.py b/solar_main.py
+--- a/solar_main.py	(revision 22d478ed4efbdf6977dbfedf274ce26e9c9405aa)
++++ b/solar_main.py	(date 1651265853544)
+@@ -6,129 +6,128 @@
+ import solar_model as model
+ import solar_vis as vis
+ 
+-perform_execution = False
+-physical_time = 0
+-displayed_time = None
+-time_step = None
+-space_objects = []
++
+ 
++class Important_values:
+ 
+-def execution(scale_factor):
++    def __init__(self):
++        self.perform_execution = False
++        self.physical_time = 0
++        self.time_step = None
++        self.space_objects = []
++        self.physical_time = 0
++        self.displayed_time = None
++        self.load_file_button = 0
++        self.save_file_button = 0
++        self.time_speed = 0
++
++        self.space = 0
++
++def execution(scale_factor, important_values_class):
+     """
+     It is executed cyclically, causing the processing of all celestial bodies, updating their position on the screen.
+     """
+-    global physical_time
+-    global displayed_time
+-    model.recalculate_space_objects_positions(space_objects, time_step.get())
+-    for body in space_objects:
+-        vis.update_object_position(space, body, scale_factor)
+-    physical_time += time_step.get()
+-    displayed_time.set("%.1f" % physical_time + " seconds gone")
++    important_values_class.space_objects = model.recalculate_space_objects_positions(important_values_class.space_objects, important_values_class.time_step.get())
++    for body in important_values_class.space_objects:
++        vis.update_object_position(important_values_class.space, body, scale_factor)
++    important_values_class.physical_time += important_values_class.time_step.get()
++    important_values_class.displayed_time.set("%.1f" % important_values_class.physical_time + " seconds gone")
+ 
+-    if perform_execution:
+-        space.after(101 - int(time_speed.get()), lambda: execution(scale_factor))
++    if important_values_class.perform_execution:
++        important_values_class.space.after(101 - int(important_values_class.time_speed.get()), lambda: execution(scale_factor, important_values_class))
+ 
+ #
+-def start_execution(scale_factor):
++def start_execution(scale_factor, important_values_class):
+     """Click event handler for the Start button.
+     Starts the cyclic execution of the execution function.
+     """
+-    global perform_execution
+-    perform_execution = True
+-    start_button['text'] = "Pause"
+-    start_button['command'] = stop_execution
+ 
+-    execution(scale_factor)
++    important_values_class.perform_execution = True
++    important_values_class.start_button['text'] = "Pause"
++    important_values_class.start_button['command'] = lambda: stop_execution(important_values_class, scale_factor)
++
++    execution(scale_factor, important_values_class)
+     print('Started execution...')
+ 
+ 
+-def stop_execution(scale_factor):
++def stop_execution(important_values_class, scale_factor):
+     """Click event handler for the Start button.
+     Finishes the cyclic execution of the execution function.
+     """
+-    global perform_execution
+-    perform_execution = False
+-    start_button['text'] = "Start"
+-    start_button['command'] = lambda: start_execution(scale_factor)
++    important_values_class.perform_execution = False
++    important_values_class.start_button['text'] = "Start"
++    important_values_class.start_button['command'] = lambda: start_execution(scale_factor, important_values_class)
+     print('Paused execution.')
+ 
+ 
+-def open_file_dialog(scale_factor):
++def open_file_dialog(scale_factor, important_values_class):
+     """
+     Open dialog window, help to choose file, read the parameters
+     """
+-    global space_objects
+-    global perform_execution
+-    perform_execution = False
+-    for obj in space_objects:
+-        space.delete(obj.image)  # удаление старых изображений планет
++    important_values_class.perform_execution = False
++    for obj in important_values_class.space_objects:
++        important_values_class.space.delete(obj.image)
+     in_filename = askopenfilename(filetypes=(("Text file", ".txt"),))
+-    space_objects = inputing.read_space_objects_data_from_file(in_filename)
+-    max_distance = max([max(abs(obj.x), abs(obj.y)) for obj in space_objects])
++    important_values_class.space_objects = inputing.read_space_objects_data_from_file(in_filename)
++    max_distance = max([max(abs(obj.x), abs(obj.y)) for obj in important_values_class.space_objects])
+     vis.calculate_scale_factor(max_distance, scale_factor)
+ 
+-    for obj in space_objects:
++    for obj in important_values_class.space_objects:
+         if obj.type == 'star':
+-            vis.create_star_image(space, obj, scale_factor)
++            vis.create_star_image(important_values_class.space, obj, scale_factor)
+         elif obj.type == 'planet':
+-            vis.create_planet_image(space, obj, scale_factor)
++            vis.create_planet_image(important_values_class.space, obj, scale_factor)
+         else:
+             raise AssertionError()
+ 
+ 
+-def save_file_dialog():
++def save_file_dialog(important_values_class):
+     """
+     Open dialog window, help to choose file, save the parameters
+     """
+     out_filename = asksaveasfilename(filetypes=(("Text file", ".txt"),))
+-    inputing.write_space_objects_data_to_file(out_filename, space_objects)
++    inputing.write_space_objects_data_to_file(out_filename, important_values_class.space_objects)
+ 
+ 
+-def main(scale_factor):
++def main(scale_factor, important_values_class):
+     """
+     Create graphic objects from tkinter: window, canvas, buttons
+     """
+-    global physical_time
+-    global displayed_time
+-    global time_step
+-    global time_speed
+-    global space
+-    global start_button
+ 
+     physical_time = 0
+ 
+     root = tkinter.Tk()
+-    space = tkinter.Canvas(root, width=vis.WINDOW_WIDTH, height=vis.WINDOW_HEIGHT, bg="black")
+-    space.pack(side=tkinter.TOP)
++    important_values_class.space = tkinter.Canvas(root, width=vis.WINDOW_WIDTH, height=vis.WINDOW_HEIGHT, bg="black")
++    important_values_class.space.pack(side=tkinter.TOP)
+ 
+     picture = tkinter.PhotoImage(file='cosmo.png')
+-    space.create_image(20, 20, anchor=NW, image=picture)
++    important_values_class.space.create_image(20, 20, anchor=NW, image=picture)
+ 
+     frame = tkinter.Frame(root, bg='#565f9c')
+     frame.pack(side=tkinter.BOTTOM)
+ 
+-    start_button = tkinter.Button(frame, text="Start", command= lambda: start_execution(scale_factor), width=6, bg='#565f9c')
+-    start_button.pack(side=tkinter.LEFT)
++    important_values_class.start_button = tkinter.Button(frame, text="Start", command= lambda: start_execution(scale_factor, important_values_class), width=6, bg='#565f9c')
++    important_values_class.start_button.pack(side=tkinter.LEFT)
+ 
+-    time_step = tkinter.DoubleVar()
+-    time_step.set(1)
+-    time_step_entry = tkinter.Entry(frame, textvariable=time_step, bg='#3a3d78')
++    important_values_class.time_step = tkinter.DoubleVar()
++    important_values_class.time_step.set(1)
++    time_step_entry = tkinter.Entry(frame, textvariable=important_values_class.time_step, bg='#3a3d78')
+     time_step_entry.pack(side=tkinter.LEFT)
+ 
+-    time_speed = tkinter.DoubleVar()
+-    scale = tkinter.Scale(frame, variable=time_speed, orient=tkinter.HORIZONTAL, highlightcolor='#565f9c',
++    important_values_class.time_speed = tkinter.DoubleVar()
++    scale = tkinter.Scale(frame, variable=important_values_class.time_speed, orient=tkinter.HORIZONTAL, highlightcolor='#565f9c',
+                           highlightbackground='#565f9c', bg='#3a3d78', activebackground='#565f9c',
+                           troughcolor='#565f9c')
+     scale.pack(side=tkinter.LEFT)
+ 
+-    load_file_button = tkinter.Button(frame, text="Open file...", command= lambda: open_file_dialog(scale_factor), bg='#565f9c')
++    load_file_button = tkinter.Button(frame, text="Open file...", command= lambda: open_file_dialog(scale_factor, important_values_class), bg='#565f9c')
+     load_file_button.pack(side=tkinter.LEFT)
+-    save_file_button = tkinter.Button(frame, text="Save to file...", command= save_file_dialog, bg='#565f9c')
++    save_file_button = tkinter.Button(frame, text="Save to file...", command= lambda: save_file_dialog(important_values_class), bg='#565f9c')
+     save_file_button.pack(side=tkinter.LEFT)
+ 
+-    displayed_time = tkinter.StringVar()
+-    displayed_time.set(str(physical_time) + " seconds gone")
+-    time_label = tkinter.Label(frame, textvariable=displayed_time, width=30, bg='#3a3d78')
++    important_values_class.displayed_time = tkinter.StringVar()
++    important_values_class.displayed_time.set(str(physical_time) + " seconds gone")
++    time_label = tkinter.Label(frame, textvariable=important_values_class.displayed_time, width=30, bg='#3a3d78')
+     time_label.pack(side=tkinter.RIGHT)
+ 
+     root.mainloop()
+@@ -136,4 +135,5 @@
+ 
+ if __name__ == "__main__":
+     scale_factor = vis.Scale_factor_in_class()
+-    main(scale_factor)
++    imp = Important_values()
++    main(scale_factor, imp)
+Index: .idea/inspectionProfiles/profiles_settings.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/inspectionProfiles/profiles_settings.xml b/.idea/inspectionProfiles/profiles_settings.xml
+new file mode 100644
+--- /dev/null	(date 1649163598367)
++++ b/.idea/inspectionProfiles/profiles_settings.xml	(date 1649163598367)
+@@ -0,0 +1,6 @@
++<component name="InspectionProjectProfileManager">
++  <settings>
++    <option name="USE_PROJECT_PROFILE" value="false" />
++    <version value="1.0" />
++  </settings>
++</component>
+\ No newline at end of file
+Index: .idea/inspectionProfiles/Project_Default.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/inspectionProfiles/Project_Default.xml b/.idea/inspectionProfiles/Project_Default.xml
+new file mode 100644
+--- /dev/null	(date 1649163598316)
++++ b/.idea/inspectionProfiles/Project_Default.xml	(date 1649163598316)
+@@ -0,0 +1,12 @@
++<component name="InspectionProjectProfileManager">
++  <profile version="1.0">
++    <option name="myName" value="Project Default" />
++    <inspection_tool class="PyShadowingBuiltinsInspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
++      <option name="ignoredNames">
++        <list>
++          <option value="type" />
++        </list>
++      </option>
++    </inspection_tool>
++  </profile>
++</component>
+\ No newline at end of file
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+new file mode 100644
+--- /dev/null	(date 1649166728050)
++++ b/.idea/misc.xml	(date 1649166728050)
+@@ -0,0 +1,4 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.11 (py6)" project-jdk-type="Python SDK" />
++</project>
+\ No newline at end of file
+Index: .idea/shelf/Uncommitted_changes_before_Update_at_05_04_2022_18_07_[Changes]/shelved.patch
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Update_at_05_04_2022_18_07_[Changes]/shelved.patch b/.idea/shelf/Uncommitted_changes_before_Update_at_05_04_2022_18_07_[Changes]/shelved.patch
+new file mode 100644
+--- /dev/null	(date 1649171420088)
++++ b/.idea/shelf/Uncommitted_changes_before_Update_at_05_04_2022_18_07_[Changes]/shelved.patch	(date 1649171420088)
+@@ -0,0 +1,153 @@
++Index: solar_input.py
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
++<+># coding: utf-8\r\n# license: GPLv3\r\n\r\nfrom solar_objects import Star, Planet\r\n\r\n\r\ndef read_space_objects_data_from_file(input_filename):\r\n    \"\"\"\r\n     функция считывает данные о космических объектах из файла, создаёт сами объекты\r\n    и вызывает создание их графических образов\r\n     :param input_filename: имя входного файла\r\n    \"\"\"\r\n\r\n    objects = []\r\n    with open(input_filename) as input_file:\r\n        for line in input_file:\r\n            if len(line.strip()) == 0 or line[0] == '#':\r\n                continue  # пустые строки и строки-комментарии пропускаем\r\n            object_type = line.split()[0].lower()\r\n            if object_type == \"star\":\r\n                star = Star()\r\n                parse_star_parameters(line, star)\r\n                objects.append(star)\r\n            elif object_type == \"planet\":\r\n                planet = Planet()\r\n                parse_planet_parameters(line, planet)\r\n                objects.append(planet)\r\n            else:\r\n                print(\"Unknown space object\")\r\n\r\n    return objects\r\n\r\n\r\ndef parse_star_parameters(line, star):\r\n    \"\"\"\r\n     Считывает данные о звезде из строки.\r\n    Входная строка должна иметь слеюущий формат:\r\n    Star <радиус в пикселах> <цвет> <масса> <x> <y> <Vx> <Vy>\r\n    Здесь (x, y) — координаты зведы, (Vx, Vy) — скорость.\r\n    Пример строки:\r\n    Star 10 red 1000 1 2 3 4\r\n     :param line: строка с описание звезды.\r\n     :param star: объект звезды.\r\n    \"\"\"\r\n    star.R = int(line.split()[1])\r\n    star.color = line.split()[2]\r\n    star.m = float(line.split()[3])\r\n    star.x = float(line.split()[4])\r\n    star.y = float(line.split()[5])\r\n    star.Vx = float(line.split()[6])\r\n    star.Vy = float(line.split()[7])\r\n\r\n\r\ndef parse_planet_parameters(line, planet):\r\n    \"\"\"\r\n     Считывает данные о звезде из строки.\r\n    Входная строка должна иметь слеюущий формат:\r\n    Star <радиус в пикселах> <цвет> <масса> <x> <y> <Vx> <Vy>\r\n    Здесь (x, y) — координаты зведы, (Vx, Vy) — скорость.\r\n    Пример строки:\r\n    Star 10 red 1000 1 2 3 4\r\n     :param line: строка с описание звезды.\r\n     :param planet: объект звезды.\r\n    \"\"\"\r\n    planet.R = int(line.split()[1])\r\n    planet.color = line.split()[2]\r\n    planet.m = float(line.split()[3])\r\n    planet.x = float(line.split()[4])\r\n    planet.y = float(line.split()[5])\r\n    planet.Vx = float(line.split()[6])\r\n    planet.Vy = float(line.split()[7])\r\n\r\n\r\ndef write_space_objects_data_to_file(output_filename, space_objects):\r\n    \"\"\"\r\n    Сохраняет данные о космических объектах в файл.\r\n    Строки должны иметь следующий формат:\r\n    Star <радиус в пикселах> <цвет> <масса> <x> <y> <Vx> <Vy>\r\n    Planet <радиус в пикселах> <цвет> <масса> <x> <y> <Vx> <Vy>\r\n     :param output_filename: имя входного файла\r\n     :param space_objects: список объектов планет и звёзд\r\n    \"\"\"\r\n    out_file = open(output_filename, 'w')\r\n    for obj in space_objects:\r\n        out_file.write(obj.type + ' ' + str(obj.R) + ' ' + obj.color + ' ' + str(obj.m) + ' ' + str(obj.x) +\r\n                       ' ' + str(obj.y) + ' ' + str(obj.Vx) + ' ' + str(obj.Vy) + '\\n')\r\n    out_file.close()\r\n\r\n\r\ndef statistics(output_filename, space_objects, time):\r\n    \"\"\"\r\n    при необходимости сохраняет параметры каждого объекта в файле следующей структуры:\r\n    Star <radius in pixels> <color> <mass> <x> <y> <Vx> <Vy>,\r\n    Planet <radius in pixels> <color> <mass> <x> <y> <Vx> <Vy>.\r\n    :param output_filename: имя получаемого файла\r\n    :param space_objects: список объектов, параметры которых мы записываем в файл\r\n    :param time: расчетное время до момента, когда пользователь попросит сохранить параметры в файл\r\n    \"\"\"\r\n    count = 0\r\n    with open(output_filename, \"w\") as out_file:\r\n        for obj in space_objects:\r\n            if obj.type == \"planet\":\r\n                print(f\"{count} {time} {obj.type} {obj.x} {obj.y} {obj.vx} {obj.vy}\", file=out_file)\r\n                line = str(count) + \" \" + str(obj.get_distance_massive()) + \" \" + str(obj.get_v_massive()) + \"\\n\"\r\n                out_file.write(line)\r\n            count += 1\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    print(\"This module is not for direct call!\")\r\n
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++diff --git a/solar_input.py b/solar_input.py
++--- a/solar_input.py	
+++++ b/solar_input.py	
++@@ -5,10 +5,12 @@
++ 
++ 
++ def read_space_objects_data_from_file(input_filename):
++-    """
++-     функция считывает данные о космических объектах из файла, создаёт сами объекты
+++    """Cчитывает данные о космических объектах из файла, создаёт сами объекты
++     и вызывает создание их графических образов
++-     :param input_filename: имя входного файла
+++
+++    Параметры:
+++
+++    **input_filename** — имя входного файла
++     """
++ 
++     objects = []
++@@ -17,14 +19,10 @@
++             if len(line.strip()) == 0 or line[0] == '#':
++                 continue  # пустые строки и строки-комментарии пропускаем
++             object_type = line.split()[0].lower()
++-            if object_type == "star":
+++            if object_type == "star":  # FIXME: do the same for planet
++                 star = Star()
++                 parse_star_parameters(line, star)
++                 objects.append(star)
++-            elif object_type == "planet":
++-                planet = Planet()
++-                parse_planet_parameters(line, planet)
++-                objects.append(planet)
++             else:
++                 print("Unknown space object")
++ 
++@@ -32,79 +30,57 @@
++ 
++ 
++ def parse_star_parameters(line, star):
++-    """
++-     Считывает данные о звезде из строки.
+++    """Считывает данные о звезде из строки.
++     Входная строка должна иметь слеюущий формат:
++     Star <радиус в пикселах> <цвет> <масса> <x> <y> <Vx> <Vy>
+++
++     Здесь (x, y) — координаты зведы, (Vx, Vy) — скорость.
++     Пример строки:
++     Star 10 red 1000 1 2 3 4
++-     :param line: строка с описание звезды.
++-     :param star: объект звезды.
+++
+++    Параметры:
+++
+++    **line** — строка с описание звезды.
+++    **star** — объект звезды.
++     """
++-    star.R = int(line.split()[1])
++-    star.color = line.split()[2]
++-    star.m = float(line.split()[3])
++-    star.x = float(line.split()[4])
++-    star.y = float(line.split()[5])
++-    star.Vx = float(line.split()[6])
++-    star.Vy = float(line.split()[7])
++ 
+++    pass  # FIXME: not done yet
++ 
++ def parse_planet_parameters(line, planet):
++-    """
++-     Считывает данные о звезде из строки.
+++    """Считывает данные о планете из строки.
+++    Предполагается такая строка:
++     Входная строка должна иметь слеюущий формат:
++-    Star <радиус в пикселах> <цвет> <масса> <x> <y> <Vx> <Vy>
++-    Здесь (x, y) — координаты зведы, (Vx, Vy) — скорость.
+++    Planet <радиус в пикселах> <цвет> <масса> <x> <y> <Vx> <Vy>
+++
+++    Здесь (x, y) — координаты планеты, (Vx, Vy) — скорость.
++     Пример строки:
++-    Star 10 red 1000 1 2 3 4
++-     :param line: строка с описание звезды.
++-     :param planet: объект звезды.
+++    Planet 10 red 1000 1 2 3 4
+++
+++    Параметры:
+++
+++    **line** — строка с описание планеты.
+++    **planet** — объект планеты.
++     """
++-    planet.R = int(line.split()[1])
++-    planet.color = line.split()[2]
++-    planet.m = float(line.split()[3])
++-    planet.x = float(line.split()[4])
++-    planet.y = float(line.split()[5])
++-    planet.Vx = float(line.split()[6])
++-    planet.Vy = float(line.split()[7])
+++    pass  # FIXME: not done yet...
++ 
++ 
++ def write_space_objects_data_to_file(output_filename, space_objects):
++-    """
++-    Сохраняет данные о космических объектах в файл.
+++    """Сохраняет данные о космических объектах в файл.
++     Строки должны иметь следующий формат:
++     Star <радиус в пикселах> <цвет> <масса> <x> <y> <Vx> <Vy>
++     Planet <радиус в пикселах> <цвет> <масса> <x> <y> <Vx> <Vy>
++-     :param output_filename: имя входного файла
++-     :param space_objects: список объектов планет и звёзд
+++
+++    Параметры:
+++
+++    **output_filename** — имя входного файла
+++    **space_objects** — список объектов планет и звёзд
++     """
++-    out_file = open(output_filename, 'w')
++-    for obj in space_objects:
++-        out_file.write(obj.type + ' ' + str(obj.R) + ' ' + obj.color + ' ' + str(obj.m) + ' ' + str(obj.x) +
++-                       ' ' + str(obj.y) + ' ' + str(obj.Vx) + ' ' + str(obj.Vy) + '\n')
++-    out_file.close()
++-
+++    with open(output_filename, 'w') as out_file:
+++        for obj in space_objects:
+++            print(out_file, "%s %d %s %f" % ('1', 2, '3', 4.5))
+++            # FIXME: should store real values
++ 
++-def statistics(output_filename, space_objects, time):
++-    """
++-    при необходимости сохраняет параметры каждого объекта в файле следующей структуры:
++-    Star <radius in pixels> <color> <mass> <x> <y> <Vx> <Vy>,
++-    Planet <radius in pixels> <color> <mass> <x> <y> <Vx> <Vy>.
++-    :param output_filename: имя получаемого файла
++-    :param space_objects: список объектов, параметры которых мы записываем в файл
++-    :param time: расчетное время до момента, когда пользователь попросит сохранить параметры в файл
++-    """
++-    count = 0
++-    with open(output_filename, "w") as out_file:
++-        for obj in space_objects:
++-            if obj.type == "planet":
++-                print(f"{count} {time} {obj.type} {obj.x} {obj.y} {obj.vx} {obj.vy}", file=out_file)
++-                line = str(count) + " " + str(obj.get_distance_massive()) + " " + str(obj.get_v_massive()) + "\n"
++-                out_file.write(line)
++-            count += 1
++-
+++# FIXME: хорошо бы ещё сделать функцию, сохранающую статистику в заданный файл...
++ 
++ if __name__ == "__main__":
++     print("This module is not for direct call!")
+Index: .idea/shelf/Uncommitted_changes_before_Update_at_05_04_2022_18_07__Changes_.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Update_at_05_04_2022_18_07__Changes_.xml b/.idea/shelf/Uncommitted_changes_before_Update_at_05_04_2022_18_07__Changes_.xml
+new file mode 100644
+--- /dev/null	(date 1651263591048)
++++ b/.idea/shelf/Uncommitted_changes_before_Update_at_05_04_2022_18_07__Changes_.xml	(date 1651263591048)
+@@ -0,0 +1,4 @@
++<changelist name="Uncommitted_changes_before_Update_at_05_04_2022_18_07_[Changes]" date="1649171275640" recycled="false" toDelete="true">
++  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_05_04_2022_18_07_[Changes]/shelved.patch" />
++  <option name="DESCRIPTION" value="Uncommitted changes before Update at 05.04.2022 18:07 [Changes]" />
++</changelist>
+\ No newline at end of file
+Index: .idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_56_[Changes]/shelved.patch
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_56_[Changes]/shelved.patch b/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_56_[Changes]/shelved.patch
+new file mode 100644
+--- /dev/null	(date 1651265772573)
++++ b/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_56_[Changes]/shelved.patch	(date 1651265772573)
+@@ -0,0 +1,208 @@
++Index: solar_main.py
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
++<+>import tkinter\r\nfrom tkinter import NW\r\nfrom tkinter.filedialog import askopenfilename, asksaveasfilename\r\n\r\nimport solar_input as inputing\r\nimport solar_model as model\r\nimport solar_vis as vis\r\n\r\nperform_execution = False\r\nphysical_time = 0\r\ndisplayed_time = None\r\ntime_step = None\r\nspace_objects = []\r\n\r\n\r\ndef execution(scale_factor):\r\n    \"\"\"\r\n    It is executed cyclically, causing the processing of all celestial bodies, updating their position on the screen.\r\n    \"\"\"\r\n    global physical_time\r\n    global displayed_time\r\n    model.recalculate_space_objects_positions(space_objects, time_step.get())\r\n    for body in space_objects:\r\n        vis.update_object_position(space, body, scale_factor)\r\n    physical_time += time_step.get()\r\n    displayed_time.set(\"%.1f\" % physical_time + \" seconds gone\")\r\n\r\n    if perform_execution:\r\n        space.after(101 - int(time_speed.get()), lambda: execution(scale_factor))\r\n\r\n#\r\ndef start_execution(scale_factor):\r\n    \"\"\"Click event handler for the Start button.\r\n    Starts the cyclic execution of the execution function.\r\n    \"\"\"\r\n    global perform_execution\r\n    perform_execution = True\r\n    start_button['text'] = \"Pause\"\r\n    start_button['command'] = stop_execution\r\n\r\n    execution(scale_factor)\r\n    print('Started execution...')\r\n\r\n\r\ndef stop_execution(scale_factor):\r\n    \"\"\"Click event handler for the Start button.\r\n    Finishes the cyclic execution of the execution function.\r\n    \"\"\"\r\n    global perform_execution\r\n    perform_execution = False\r\n    start_button['text'] = \"Start\"\r\n    start_button['command'] = lambda: start_execution(scale_factor)\r\n    print('Paused execution.')\r\n\r\n\r\ndef open_file_dialog(scale_factor):\r\n    \"\"\"\r\n    Open dialog window, help to choose file, read the parameters\r\n    \"\"\"\r\n    global space_objects\r\n    global perform_execution\r\n    perform_execution = False\r\n    for obj in space_objects:\r\n        space.delete(obj.image)  # удаление старых изображений планет\r\n    in_filename = askopenfilename(filetypes=((\"Text file\", \".txt\"),))\r\n    space_objects = inputing.read_space_objects_data_from_file(in_filename)\r\n    max_distance = max([max(abs(obj.x), abs(obj.y)) for obj in space_objects])\r\n    vis.calculate_scale_factor(max_distance, scale_factor)\r\n\r\n    for obj in space_objects:\r\n        if obj.type == 'star':\r\n            vis.create_star_image(space, obj, scale_factor)\r\n        elif obj.type == 'planet':\r\n            vis.create_planet_image(space, obj, scale_factor)\r\n        else:\r\n            raise AssertionError()\r\n\r\n\r\ndef save_file_dialog():\r\n    \"\"\"\r\n    Open dialog window, help to choose file, save the parameters\r\n    \"\"\"\r\n    out_filename = asksaveasfilename(filetypes=((\"Text file\", \".txt\"),))\r\n    inputing.write_space_objects_data_to_file(out_filename, space_objects)\r\n\r\n\r\ndef main(scale_factor):\r\n    \"\"\"\r\n    Create graphic objects from tkinter: window, canvas, buttons\r\n    \"\"\"\r\n    global physical_time\r\n    global displayed_time\r\n    global time_step\r\n    global time_speed\r\n    global space\r\n    global start_button\r\n\r\n    physical_time = 0\r\n\r\n    root = tkinter.Tk()\r\n    space = tkinter.Canvas(root, width=vis.WINDOW_WIDTH, height=vis.WINDOW_HEIGHT, bg=\"black\")\r\n    space.pack(side=tkinter.TOP)\r\n\r\n    picture = tkinter.PhotoImage(file='cosmo.png')\r\n    space.create_image(20, 20, anchor=NW, image=picture)\r\n\r\n    frame = tkinter.Frame(root, bg='#565f9c')\r\n    frame.pack(side=tkinter.BOTTOM)\r\n\r\n    start_button = tkinter.Button(frame, text=\"Start\", command= lambda: start_execution(scale_factor), width=6, bg='#565f9c')\r\n    start_button.pack(side=tkinter.LEFT)\r\n\r\n    time_step = tkinter.DoubleVar()\r\n    time_step.set(1)\r\n    time_step_entry = tkinter.Entry(frame, textvariable=time_step, bg='#3a3d78')\r\n    time_step_entry.pack(side=tkinter.LEFT)\r\n\r\n    time_speed = tkinter.DoubleVar()\r\n    scale = tkinter.Scale(frame, variable=time_speed, orient=tkinter.HORIZONTAL, highlightcolor='#565f9c',\r\n                          highlightbackground='#565f9c', bg='#3a3d78', activebackground='#565f9c',\r\n                          troughcolor='#565f9c')\r\n    scale.pack(side=tkinter.LEFT)\r\n\r\n    load_file_button = tkinter.Button(frame, text=\"Open file...\", command= lambda: open_file_dialog(scale_factor), bg='#565f9c')\r\n    load_file_button.pack(side=tkinter.LEFT)\r\n    save_file_button = tkinter.Button(frame, text=\"Save to file...\", command= save_file_dialog, bg='#565f9c')\r\n    save_file_button.pack(side=tkinter.LEFT)\r\n\r\n    displayed_time = tkinter.StringVar()\r\n    displayed_time.set(str(physical_time) + \" seconds gone\")\r\n    time_label = tkinter.Label(frame, textvariable=displayed_time, width=30, bg='#3a3d78')\r\n    time_label.pack(side=tkinter.RIGHT)\r\n\r\n    root.mainloop()\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    scale_factor = vis.Scale_factor_in_class()\r\n    main(scale_factor)\r\n
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++diff --git a/solar_main.py b/solar_main.py
++--- a/solar_main.py	(revision 22d478ed4efbdf6977dbfedf274ce26e9c9405aa)
+++++ b/solar_main.py	(date 1651265770117)
++@@ -6,129 +6,128 @@
++ import solar_model as model
++ import solar_vis as vis
++ 
++-perform_execution = False
++-physical_time = 0
++-displayed_time = None
++-time_step = None
++-space_objects = []
+++
++ 
+++class Important_values:
++ 
++-def execution(scale_factor):
+++    def __init__(self):
+++        self.perform_execution = False
+++        self.physical_time = 0
+++        self.time_step = None
+++        self.space_objects = []
+++        self.physical_time = 0
+++        self.displayed_time = None
+++        self.load_file_button = 0
+++        self.save_file_button = 0
+++        self.time_speed = 0
+++
+++        self.space = 0
+++
+++def execution(scale_factor, important_values_class):
++     """
++     It is executed cyclically, causing the processing of all celestial bodies, updating their position on the screen.
++     """
++-    global physical_time
++-    global displayed_time
++-    model.recalculate_space_objects_positions(space_objects, time_step.get())
++-    for body in space_objects:
++-        vis.update_object_position(space, body, scale_factor)
++-    physical_time += time_step.get()
++-    displayed_time.set("%.1f" % physical_time + " seconds gone")
+++    important_values_class.space_objects = model.recalculate_space_objects_positions(important_values_class.space_objects, important_values_class.time_step.get())
+++    for body in important_values_class.space_objects:
+++        vis.update_object_position(important_values_class.space, body, scale_factor)
+++    important_values_class.physical_time += important_values_class.time_step.get()
+++    important_values_class.displayed_time.set("%.1f" % important_values_class.physical_time + " seconds gone")
++ 
++-    if perform_execution:
++-        space.after(101 - int(time_speed.get()), lambda: execution(scale_factor))
+++    if important_values_class.perform_execution:
+++        important_values_class.space.after(101 - int(important_values_class.time_speed.get()), lambda: execution(scale_factor, important_values_class))
++ 
++-#
++-def start_execution(scale_factor):
+++
+++def start_execution(scale_factor, important_values_class):
++     """Click event handler for the Start button.
++     Starts the cyclic execution of the execution function.
++     """
++-    global perform_execution
++-    perform_execution = True
++-    start_button['text'] = "Pause"
++-    start_button['command'] = stop_execution
++ 
++-    execution(scale_factor)
+++    important_values_class.perform_execution = True
+++    important_values_class.start_button['text'] = "Pause"
+++    important_values_class.start_button['command'] = lambda: stop_execution(important_values_class, scale_factor)
+++
+++    execution(scale_factor, important_values_class)
++     print('Started execution...')
++ 
++ 
++-def stop_execution(scale_factor):
+++def stop_execution(important_values_class, scale_factor):
++     """Click event handler for the Start button.
++     Finishes the cyclic execution of the execution function.
++     """
++-    global perform_execution
++-    perform_execution = False
++-    start_button['text'] = "Start"
++-    start_button['command'] = lambda: start_execution(scale_factor)
+++    important_values_class.perform_execution = False
+++    important_values_class.start_button['text'] = "Start"
+++    important_values_class.start_button['command'] = lambda: start_execution(scale_factor, important_values_class)
++     print('Paused execution.')
++ 
++ 
++-def open_file_dialog(scale_factor):
+++def open_file_dialog(scale_factor, important_values_class):
++     """
++     Open dialog window, help to choose file, read the parameters
++     """
++-    global space_objects
++-    global perform_execution
++-    perform_execution = False
++-    for obj in space_objects:
++-        space.delete(obj.image)  # удаление старых изображений планет
+++    important_values_class.perform_execution = False
+++    for obj in important_values_class.space_objects:
+++        important_values_class.space.delete(obj.image)
++     in_filename = askopenfilename(filetypes=(("Text file", ".txt"),))
++-    space_objects = inputing.read_space_objects_data_from_file(in_filename)
++-    max_distance = max([max(abs(obj.x), abs(obj.y)) for obj in space_objects])
+++    important_values_class.space_objects = inputing.read_space_objects_data_from_file(in_filename)
+++    max_distance = max([max(abs(obj.x), abs(obj.y)) for obj in important_values_class.space_objects])
++     vis.calculate_scale_factor(max_distance, scale_factor)
++ 
++-    for obj in space_objects:
+++    for obj in important_values_class.space_objects:
++         if obj.type == 'star':
++-            vis.create_star_image(space, obj, scale_factor)
+++            vis.create_star_image(important_values_class.space, obj, scale_factor)
++         elif obj.type == 'planet':
++-            vis.create_planet_image(space, obj, scale_factor)
+++            vis.create_planet_image(important_values_class.space, obj, scale_factor)
++         else:
++             raise AssertionError()
++ 
++ 
++-def save_file_dialog():
+++def save_file_dialog(important_values_class):
++     """
++     Open dialog window, help to choose file, save the parameters
++     """
++     out_filename = asksaveasfilename(filetypes=(("Text file", ".txt"),))
++-    inputing.write_space_objects_data_to_file(out_filename, space_objects)
+++    inputing.write_space_objects_data_to_file(out_filename, important_values_class.space_objects)
++ 
++ 
++-def main(scale_factor):
+++def main(scale_factor, important_values_class):
++     """
++     Create graphic objects from tkinter: window, canvas, buttons
++     """
++-    global physical_time
++-    global displayed_time
++-    global time_step
++-    global time_speed
++-    global space
++-    global start_button
++ 
++     physical_time = 0
++ 
++     root = tkinter.Tk()
++-    space = tkinter.Canvas(root, width=vis.WINDOW_WIDTH, height=vis.WINDOW_HEIGHT, bg="black")
++-    space.pack(side=tkinter.TOP)
+++    important_values_class.space = tkinter.Canvas(root, width=vis.WINDOW_WIDTH, height=vis.WINDOW_HEIGHT, bg="black")
+++    important_values_class.space.pack(side=tkinter.TOP)
++ 
++     picture = tkinter.PhotoImage(file='cosmo.png')
++-    space.create_image(20, 20, anchor=NW, image=picture)
+++    important_values_class.space.create_image(20, 20, anchor=NW, image=picture)
++ 
++     frame = tkinter.Frame(root, bg='#565f9c')
++     frame.pack(side=tkinter.BOTTOM)
++ 
++-    start_button = tkinter.Button(frame, text="Start", command= lambda: start_execution(scale_factor), width=6, bg='#565f9c')
++-    start_button.pack(side=tkinter.LEFT)
+++    important_values_class.start_button = tkinter.Button(frame, text="Start", command= lambda: start_execution(scale_factor, important_values_class), width=6, bg='#565f9c')
+++    important_values_class.start_button.pack(side=tkinter.LEFT)
++ 
++-    time_step = tkinter.DoubleVar()
++-    time_step.set(1)
++-    time_step_entry = tkinter.Entry(frame, textvariable=time_step, bg='#3a3d78')
+++    important_values_class.time_step = tkinter.DoubleVar()
+++    important_values_class.time_step.set(1)
+++    time_step_entry = tkinter.Entry(frame, textvariable=important_values_class.time_step, bg='#3a3d78')
++     time_step_entry.pack(side=tkinter.LEFT)
++ 
++-    time_speed = tkinter.DoubleVar()
++-    scale = tkinter.Scale(frame, variable=time_speed, orient=tkinter.HORIZONTAL, highlightcolor='#565f9c',
+++    important_values_class.time_speed = tkinter.DoubleVar()
+++    scale = tkinter.Scale(frame, variable=important_values_class.time_speed, orient=tkinter.HORIZONTAL, highlightcolor='#565f9c',
++                           highlightbackground='#565f9c', bg='#3a3d78', activebackground='#565f9c',
++                           troughcolor='#565f9c')
++     scale.pack(side=tkinter.LEFT)
++ 
++-    load_file_button = tkinter.Button(frame, text="Open file...", command= lambda: open_file_dialog(scale_factor), bg='#565f9c')
+++    load_file_button = tkinter.Button(frame, text="Open file...", command= lambda: open_file_dialog(scale_factor, important_values_class), bg='#565f9c')
++     load_file_button.pack(side=tkinter.LEFT)
++-    save_file_button = tkinter.Button(frame, text="Save to file...", command= save_file_dialog, bg='#565f9c')
+++    save_file_button = tkinter.Button(frame, text="Save to file...", command= lambda: save_file_dialog(important_values_class), bg='#565f9c')
++     save_file_button.pack(side=tkinter.LEFT)
++ 
++-    displayed_time = tkinter.StringVar()
++-    displayed_time.set(str(physical_time) + " seconds gone")
++-    time_label = tkinter.Label(frame, textvariable=displayed_time, width=30, bg='#3a3d78')
+++    important_values_class.displayed_time = tkinter.StringVar()
+++    important_values_class.displayed_time.set(str(physical_time) + " seconds gone")
+++    time_label = tkinter.Label(frame, textvariable=important_values_class.displayed_time, width=30, bg='#3a3d78')
++     time_label.pack(side=tkinter.RIGHT)
++ 
++     root.mainloop()
++@@ -136,4 +135,5 @@
++ 
++ if __name__ == "__main__":
++     scale_factor = vis.Scale_factor_in_class()
++-    main(scale_factor)
+++    imp = Important_values()
+++    main(scale_factor, imp)
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+new file mode 100644
+--- /dev/null	(date 1651265893724)
++++ b/.idea/workspace.xml	(date 1651265893724)
+@@ -0,0 +1,275 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="AutoImportSettings">
++    <option name="autoReloadType" value="SELECTIVE" />
++  </component>
++  <component name="ChangeListManager">
++    <list default="true" id="23f0b31c-4f91-4378-a5bd-c42d9a982359" name="Changes" comment="Forgot to push 11">
++      <change afterPath="$PROJECT_DIR$/.idea/2016-solar_project.iml" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_05_04_2022_18_07_[Changes]/shelved.patch" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_05_04_2022_18_07__Changes_.xml" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_26_04_2022_16_25_[Changes]/shelved.patch" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_26_04_2022_16_25__Changes_.xml" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_51_[Changes]/shelved.patch" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_51__Changes_.xml" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_56_[Changes]/shelved.patch" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_56__Changes_.xml" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/cosmo.png" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/solar_main.py" beforeDir="false" afterPath="$PROJECT_DIR$/solar_main.py" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/solar_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/solar_model.py" afterDir="false" />
++    </list>
++    <option name="SHOW_DIALOG" value="false" />
++    <option name="HIGHLIGHT_CONFLICTS" value="true" />
++    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
++    <option name="LAST_RESOLUTION" value="IGNORE" />
++  </component>
++  <component name="Git.Settings">
++    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
++  </component>
++  <component name="MarkdownSettingsMigration">
++    <option name="stateVersion" value="1" />
++  </component>
++  <component name="ProblemsViewState">
++    <option name="selectedTabId" value="CurrentFile" />
++  </component>
++  <component name="ProjectId" id="27NbfOhPqCzcqWX3yFdsylNjOKo" />
++  <component name="ProjectViewState">
++    <option name="hideEmptyMiddlePackages" value="true" />
++    <option name="showLibraryContents" value="true" />
++  </component>
++  <component name="PropertiesComponent">
++    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
++    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
++    <property name="last_opened_file_path" value="$PROJECT_DIR$/../FrontierWorld" />
++    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PythonContentEntriesConfigurable" />
++  </component>
++  <component name="RunManager" selected="Python.solar_main">
++    <configuration name="Gun" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
++      <module name="2016-solar_project" />
++      <option name="INTERPRETER_OPTIONS" value="" />
++      <option name="PARENT_ENVS" value="true" />
++      <envs>
++        <env name="PYTHONUNBUFFERED" value="1" />
++      </envs>
++      <option name="SDK_HOME" value="" />
++      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../lab 7 (gun)" />
++      <option name="IS_MODULE_SDK" value="false" />
++      <option name="ADD_CONTENT_ROOTS" value="true" />
++      <option name="ADD_SOURCE_ROOTS" value="true" />
++      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../lab 7 (gun)/Gun.py" />
++      <option name="PARAMETERS" value="" />
++      <option name="SHOW_COMMAND_LINE" value="false" />
++      <option name="EMULATE_TERMINAL" value="false" />
++      <option name="MODULE_MODE" value="false" />
++      <option name="REDIRECT_INPUT" value="false" />
++      <option name="INPUT_FILE" value="" />
++      <method v="2" />
++    </configuration>
++    <configuration name="solar_main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
++      <module name="2016-solar_project" />
++      <option name="INTERPRETER_OPTIONS" value="" />
++      <option name="PARENT_ENVS" value="true" />
++      <envs>
++        <env name="PYTHONUNBUFFERED" value="1" />
++      </envs>
++      <option name="SDK_HOME" value="" />
++      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
++      <option name="IS_MODULE_SDK" value="true" />
++      <option name="ADD_CONTENT_ROOTS" value="true" />
++      <option name="ADD_SOURCE_ROOTS" value="true" />
++      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/solar_main.py" />
++      <option name="PARAMETERS" value="" />
++      <option name="SHOW_COMMAND_LINE" value="false" />
++      <option name="EMULATE_TERMINAL" value="false" />
++      <option name="MODULE_MODE" value="false" />
++      <option name="REDIRECT_INPUT" value="false" />
++      <option name="INPUT_FILE" value="" />
++      <method v="2" />
++    </configuration>
++    <configuration name="solar_vis" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
++      <module name="2016-solar_project" />
++      <option name="INTERPRETER_OPTIONS" value="" />
++      <option name="PARENT_ENVS" value="true" />
++      <envs>
++        <env name="PYTHONUNBUFFERED" value="1" />
++      </envs>
++      <option name="SDK_HOME" value="" />
++      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
++      <option name="IS_MODULE_SDK" value="true" />
++      <option name="ADD_CONTENT_ROOTS" value="true" />
++      <option name="ADD_SOURCE_ROOTS" value="true" />
++      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/solar_vis.py" />
++      <option name="PARAMETERS" value="" />
++      <option name="SHOW_COMMAND_LINE" value="false" />
++      <option name="EMULATE_TERMINAL" value="false" />
++      <option name="MODULE_MODE" value="false" />
++      <option name="REDIRECT_INPUT" value="false" />
++      <option name="INPUT_FILE" value="" />
++      <method v="2" />
++    </configuration>
++    <recent_temporary>
++      <list>
++        <item itemvalue="Python.solar_main" />
++        <item itemvalue="Python.Gun" />
++        <item itemvalue="Python.solar_vis" />
++      </list>
++    </recent_temporary>
++  </component>
++  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
++  <component name="TaskManager">
++    <task active="true" id="Default" summary="Default task">
++      <changelist id="23f0b31c-4f91-4378-a5bd-c42d9a982359" name="Changes" comment="" />
++      <created>1649163593953</created>
++      <option name="number" value="Default" />
++      <option name="presentableId" value="Default" />
++      <updated>1649163593953</updated>
++    </task>
++    <task id="LOCAL-00001" summary="functions corrected">
++      <created>1649165946703</created>
++      <option name="number" value="00001" />
++      <option name="presentableId" value="LOCAL-00001" />
++      <option name="project" value="LOCAL" />
++      <updated>1649165946703</updated>
++    </task>
++    <task id="LOCAL-00002" summary="import * removed">
++      <created>1649168518958</created>
++      <option name="number" value="00002" />
++      <option name="presentableId" value="LOCAL-00002" />
++      <option name="project" value="LOCAL" />
++      <updated>1649168518958</updated>
++    </task>
++    <task id="LOCAL-00003" summary="It works">
++      <created>1649171464615</created>
++      <option name="number" value="00003" />
++      <option name="presentableId" value="LOCAL-00003" />
++      <option name="project" value="LOCAL" />
++      <updated>1649171464615</updated>
++    </task>
++    <task id="LOCAL-00004" summary="correct imports">
++      <created>1649683218227</created>
++      <option name="number" value="00004" />
++      <option name="presentableId" value="LOCAL-00004" />
++      <option name="project" value="LOCAL" />
++      <updated>1649683218227</updated>
++    </task>
++    <task id="LOCAL-00005" summary="Improved docstrings, added inheritance">
++      <created>1649757303075</created>
++      <option name="number" value="00005" />
++      <option name="presentableId" value="LOCAL-00005" />
++      <option name="project" value="LOCAL" />
++      <updated>1649757303075</updated>
++    </task>
++    <task id="LOCAL-00006" summary="Some corrects">
++      <created>1649757656080</created>
++      <option name="number" value="00006" />
++      <option name="presentableId" value="LOCAL-00006" />
++      <option name="project" value="LOCAL" />
++      <updated>1649757656080</updated>
++    </task>
++    <task id="LOCAL-00007" summary="Some visual corrects :)">
++      <created>1649760544545</created>
++      <option name="number" value="00007" />
++      <option name="presentableId" value="LOCAL-00007" />
++      <option name="project" value="LOCAL" />
++      <updated>1649760544545</updated>
++    </task>
++    <task id="LOCAL-00008" summary="Forgot to push">
++      <created>1650968168018</created>
++      <option name="number" value="00008" />
++      <option name="presentableId" value="LOCAL-00008" />
++      <option name="project" value="LOCAL" />
++      <updated>1650968168018</updated>
++    </task>
++    <task id="LOCAL-00009" summary="Forgot to push">
++      <created>1650979588265</created>
++      <option name="number" value="00009" />
++      <option name="presentableId" value="LOCAL-00009" />
++      <option name="project" value="LOCAL" />
++      <updated>1650979588265</updated>
++    </task>
++    <option name="localTasksCounter" value="10" />
++    <servers />
++  </component>
++  <component name="Vcs.Log.Tabs.Properties">
++    <option name="TAB_STATES">
++      <map>
++        <entry key="MAIN">
++          <value>
++            <State>
++              <option name="FILTERS">
++                <map>
++                  <entry key="branch">
++                    <value>
++                      <list>
++                        <option value="master" />
++                      </list>
++                    </value>
++                  </entry>
++                  <entry key="user">
++                    <value>
++                      <list>
++                        <option value="*" />
++                      </list>
++                    </value>
++                  </entry>
++                </map>
++              </option>
++            </State>
++          </value>
++        </entry>
++      </map>
++    </option>
++    <option name="RECENT_FILTERS">
++      <map>
++        <entry key="Branch">
++          <value>
++            <list>
++              <RecentGroup>
++                <option name="FILTER_VALUES">
++                  <option value="master" />
++                </option>
++              </RecentGroup>
++              <RecentGroup>
++                <option name="FILTER_VALUES">
++                  <option value="HEAD" />
++                </option>
++              </RecentGroup>
++              <RecentGroup>
++                <option name="FILTER_VALUES">
++                  <option value="origin/master" />
++                </option>
++              </RecentGroup>
++            </list>
++          </value>
++        </entry>
++        <entry key="User">
++          <value>
++            <list>
++              <RecentGroup>
++                <option name="FILTER_VALUES">
++                  <option value="*" />
++                </option>
++              </RecentGroup>
++            </list>
++          </value>
++        </entry>
++      </map>
++    </option>
++  </component>
++  <component name="VcsManagerConfiguration">
++    <MESSAGE value="functions corrected" />
++    <MESSAGE value="import * removed" />
++    <MESSAGE value="It works" />
++    <MESSAGE value="correct imports" />
++    <MESSAGE value="Improved docstrings, added inheritance" />
++    <MESSAGE value="Some corrects" />
++    <MESSAGE value="Some visual corrects :)" />
++    <MESSAGE value="Forgot to push" />
++    <option name="LAST_COMMIT_MESSAGE" value="Forgot to push" />
++  </component>
++</project>
+\ No newline at end of file
+Index: .idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_51__Changes_.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_51__Changes_.xml b/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_51__Changes_.xml
+new file mode 100644
+--- /dev/null	(date 1651265576354)
++++ b/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_51__Changes_.xml	(date 1651265576354)
+@@ -0,0 +1,4 @@
++<changelist name="Uncommitted_changes_before_Update_at_29_04_2022_23_51_[Changes]" date="1651265503875" recycled="false" toDelete="true">
++  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_51_[Changes]/shelved.patch" />
++  <option name="DESCRIPTION" value="Uncommitted changes before Update at 29.04.2022 23:51 [Changes]" />
++</changelist>
+\ No newline at end of file
+Index: .idea/shelf/Uncommitted_changes_before_Update_at_26_04_2022_16_25__Changes_.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Update_at_26_04_2022_16_25__Changes_.xml b/.idea/shelf/Uncommitted_changes_before_Update_at_26_04_2022_16_25__Changes_.xml
+new file mode 100644
+--- /dev/null	(date 1651263591056)
++++ b/.idea/shelf/Uncommitted_changes_before_Update_at_26_04_2022_16_25__Changes_.xml	(date 1651263591056)
+@@ -0,0 +1,4 @@
++<changelist name="Uncommitted_changes_before_Update_at_26_04_2022_16_25_[Changes]" date="1650979517772" recycled="false" toDelete="true">
++  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_26_04_2022_16_25_[Changes]/shelved.patch" />
++  <option name="DESCRIPTION" value="Uncommitted changes before Update at 26.04.2022 16:25 [Changes]" />
++</changelist>
+\ No newline at end of file
+Index: .idea/modules.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/modules.xml b/.idea/modules.xml
+new file mode 100644
+--- /dev/null	(date 1649163598351)
++++ b/.idea/modules.xml	(date 1649163598351)
+@@ -0,0 +1,8 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="ProjectModuleManager">
++    <modules>
++      <module fileurl="file://$PROJECT_DIR$/.idea/2016-solar_project.iml" filepath="$PROJECT_DIR$/.idea/2016-solar_project.iml" />
++    </modules>
++  </component>
++</project>
+\ No newline at end of file
+Index: .idea/2016-solar_project.iml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/2016-solar_project.iml b/.idea/2016-solar_project.iml
+new file mode 100644
+--- /dev/null	(date 1651265576385)
++++ b/.idea/2016-solar_project.iml	(date 1651265576385)
+@@ -0,0 +1,14 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<module type="PYTHON_MODULE" version="4">
++  <component name="NewModuleRootManager">
++    <content url="file://$MODULE_DIR$">
++      <sourceFolder url="file://$MODULE_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_26_04_2022_16_25_[Changes]" isTestSource="false" />
++    </content>
++    <orderEntry type="jdk" jdkName="Python 3.11 (py6)" jdkType="Python SDK" />
++    <orderEntry type="sourceFolder" forTests="false" />
++  </component>
++  <component name="PyDocumentationSettings">
++    <option name="format" value="PLAIN" />
++    <option name="myDocStringFormat" value="Plain" />
++  </component>
++</module>
+\ No newline at end of file
+Index: .idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_56__Changes_.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_56__Changes_.xml b/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_56__Changes_.xml
+new file mode 100644
+--- /dev/null	(date 1651265778449)
++++ b/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_56__Changes_.xml	(date 1651265778449)
+@@ -0,0 +1,4 @@
++<changelist name="Uncommitted_changes_before_Update_at_29_04_2022_23_56_[Changes]" date="1651265772573" recycled="false" toDelete="true">
++  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_56_[Changes]/shelved.patch" />
++  <option name="DESCRIPTION" value="Uncommitted changes before Update at 29.04.2022 23:56 [Changes]" />
++</changelist>
+\ No newline at end of file
+Index: .idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_51_[Changes]/shelved.patch
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_51_[Changes]/shelved.patch b/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_51_[Changes]/shelved.patch
+new file mode 100644
+--- /dev/null	(date 1651265503875)
++++ b/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2022_23_51_[Changes]/shelved.patch	(date 1651265503875)
+@@ -0,0 +1,48 @@
++Index: solar_objects.py
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
++<+>class Star:\r\n    \"\"\"Describes the star.\r\n    Contains the mass, coordinates, speed of the star,\r\n    as well as the visual radius of the star in pixels and its color.\r\n    \"\"\"\r\n\r\n    type = \"star\"\r\n    mass = 0\r\n    x = 0\r\n    y = 0\r\n    Vx = 0\r\n    Vy = 0\r\n    Fx = 0\r\n    Fy = 0\r\n    R = 5\r\n    color = \"red\"\r\n    image = None\r\n\r\n\r\nclass Planet(Star):\r\n    \"\"\"Describes the planet.\"\"\"\r\n    type = \"planet\"\r\n
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++diff --git a/solar_objects.py b/solar_objects.py
++--- a/solar_objects.py	(revision 22d478ed4efbdf6977dbfedf274ce26e9c9405aa)
+++++ b/solar_objects.py	(date 1651263295098)
++@@ -4,7 +4,7 @@
++     as well as the visual radius of the star in pixels and its color.
++     """
++ 
++-    type = "star"
+++
++     mass = 0
++     x = 0
++     y = 0
++@@ -15,8 +15,9 @@
++     R = 5
++     color = "red"
++     image = None
+++    type = 'star'
++ 
++ 
++ class Planet(Star):
++     """Describes the planet."""
++-    type = "planet"
+++    type = 'planet'
++Index: solar_vis.py
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
++<+>\"\"\"Visualization module.\"\"\"\r\n\r\nheader_font = \"Arial-16\"\r\nWINDOW_WIDTH = 600\r\nWINDOW_HEIGHT = 600\r\n\r\n\r\nclass Scale_factor_in_class:\r\n    value = None\r\n\r\n\r\n\"\"\"Scaling of screen coordinates in relation to physical ones.\r\nType: float\r\nMeasure: number of pixels per meter.\"\"\"\r\n\r\n#\r\ndef calculate_scale_factor(max_distance, scale_factor):\r\n    \"\"\"\r\n    Count scale_factor using height,width\r\n    \"\"\"\r\n    scale_factor.value = 0.4 * min(WINDOW_HEIGHT, WINDOW_WIDTH) / max_distance\r\n    print('Scale factor:', scale_factor)\r\n\r\n\r\ndef scale_x(x, scale_factor):\r\n    \"\"\"\r\n    Returns the screen **x** coordinate given the **x** coordinate of the model.\r\n\r\n    return: int value\r\n    \"\"\"\r\n    return int(x * scale_factor.value) + WINDOW_WIDTH // 2\r\n\r\n\r\ndef scale_y(y, scale_factor):\r\n    \"\"\"\r\n    Returns the screen **y** coordinate given the **y** coordinate of the model.\r\n\r\n    return: int value\r\n    \"\"\"\r\n    return int(y * scale_factor.value) + WINDOW_HEIGHT // 2\r\n\r\n\r\ndef create_star_image(space, star, scale_factor):\r\n    \"\"\"Create the star object.\r\n\r\n    :param: x,y - coordinates after scaling\r\n    :param: r - radius of the star\r\n    \"\"\"\r\n    x = scale_x(star.x, scale_factor)\r\n    y = scale_y(star.y, scale_factor)\r\n    r = star.R\r\n    star.image = space.create_oval([x - r, y - r], [x + r, y + r], fill=star.color)\r\n\r\n\r\ndef create_planet_image(space, planet, scale_factor):\r\n    \"\"\"Create the planet object.\r\n\r\n    :param: x,y - coordinates after scaling\r\n    :param: r - radius of the planet\r\n    \"\"\"\r\n    x = scale_x(planet.x, scale_factor)\r\n    y = scale_y(planet.y, scale_factor)\r\n    r = planet.R\r\n    planet.image = space.create_oval([x - r, y - r], [x + r, y + r], fill=planet.color)\r\n\r\n\r\ndef update_system_name(space, system_name):\r\n    \"\"\"Create text with name of objects\r\n\r\n    :param: space — canvas\r\n    :param: system_name\r\n    \"\"\"\r\n    space.create_text(30, 80, tag=\"header\", text=system_name, font=header_font)\r\n\r\n\r\ndef update_object_position(space, body, scale_factor):\r\n    \"\"\"Moves objects\r\n\r\n    :param: space — canvas\r\n    :param: body - the object need to replace\r\n    \"\"\"\r\n    x = scale_x(body.x, scale_factor)\r\n    y = scale_y(body.y, scale_factor)\r\n    r = body.R\r\n    if x + r < 0 or x - r > WINDOW_WIDTH or y + r < 0 or y - r > WINDOW_HEIGHT:\r\n        space.coords(body.image, WINDOW_WIDTH + r, WINDOW_HEIGHT + r,\r\n                     WINDOW_WIDTH + 2 * r, WINDOW_HEIGHT + 2 * r)  # положить за пределы окна\r\n    space.coords(body.image, x - r, y - r, x + r, y + r)\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    print(\"This module is not for direct call!\")\r\n
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++diff --git a/solar_vis.py b/solar_vis.py
++--- a/solar_vis.py	(revision 22d478ed4efbdf6977dbfedf274ce26e9c9405aa)
+++++ b/solar_vis.py	(date 1651257741202)
++@@ -13,7 +13,6 @@
++ Type: float
++ Measure: number of pixels per meter."""
++ 
++-#
++ def calculate_scale_factor(max_distance, scale_factor):
++     """
++     Count scale_factor using height,width
+Index: .idea/shelf/Uncommitted_changes_before_Update_at_26_04_2022_16_25_[Changes]/shelved.patch
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Update_at_26_04_2022_16_25_[Changes]/shelved.patch b/.idea/shelf/Uncommitted_changes_before_Update_at_26_04_2022_16_25_[Changes]/shelved.patch
+new file mode 100644
+--- /dev/null	(date 1650979517772)
++++ b/.idea/shelf/Uncommitted_changes_before_Update_at_26_04_2022_16_25_[Changes]/shelved.patch	(date 1650979517772)
+@@ -0,0 +1,226 @@
++Index: solar_model.py
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
++<+>GRAVITATION_CONSTANT = 6.67408E-11\r\n\r\n\r\ndef calculate_force(body, space_objects):\r\n    \"\"\"\r\n     Calculate acting force\r\n     :param body: the body to be moved by force\r\n     :param space_objects: list of objects\r\n     \"\"\"\r\n\r\n    body.Fx = 0\r\n    body.Fy = 0\r\n    for obj in space_objects:\r\n        if body == obj:\r\n            continue\r\n        rx = (obj.x - body.x)\r\n        ry = (obj.y - body.y)\r\n        r = (rx ** 2 + ry ** 2) ** 0.5\r\n        body.Fx += (GRAVITATION_CONSTANT * (body.m * obj.m) / r ** 3 * rx)\r\n        body.Fy += (GRAVITATION_CONSTANT * (body.m * obj.m) / r ** 3 * ry)\r\n\r\n\r\ndef move_space_object(body, dt):\r\n    \"\"\"\r\n     Function moves the body in accordance with the force acting on it.\r\n     :param body: the body to be moved\r\n     :param dt: duration of the force\r\n    \"\"\"\r\n    try:\r\n        if dt > 900000:\r\n            raise ValueError(\r\n                \"Too big dt, dt = \" + str(dt) + \", please, reudce value to 900000 with left down corner\")\r\n        if body.m == 0:\r\n            ax = 0\r\n            ay = 0\r\n        else:\r\n            ax = body.Fx / body.m\r\n            ay = body.Fy / body.m\r\n\r\n        if body.type != \"star\":\r\n            body.Vx += ax * dt\r\n            body.x += body.Vx * dt\r\n\r\n            body.Vy += ay * dt\r\n            body.y += body.Vy * dt\r\n    except ValueError as e:\r\n        print(e)\r\n        exit()\r\n\r\n\r\ndef recalculate_space_objects_positions(space_objects, dt):\r\n    \"\"\"\r\n    Recalculate the coordinates\r\n     :space_objects: a list of objects for which you need to recalculate the coordinates\r\n     :dt: time step\r\n    \"\"\"\r\n\r\n    for body in space_objects:\r\n        calculate_force(body, space_objects)\r\n    for body in space_objects:\r\n        move_space_object(body, dt)\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    print(\"This module is not for direct call!\")\r\n
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++diff --git a/solar_model.py b/solar_model.py
++--- a/solar_model.py	(revision e6c014866d687f016dc23e59fdc0fc826234db81)
+++++ b/solar_model.py	(date 1650978064146)
++@@ -59,7 +59,7 @@
++         calculate_force(body, space_objects)
++     for body in space_objects:
++         move_space_object(body, dt)
++-
+++    return space_objects
++ 
++ if __name__ == "__main__":
++     print("This module is not for direct call!")
++Index: solar_main.py
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
++<+>import tkinter\r\nfrom tkinter import NW\r\nfrom tkinter.filedialog import askopenfilename, asksaveasfilename\r\n\r\nimport solar_input as inputing\r\nimport solar_model as model\r\nimport solar_vis as vis\r\n\r\nperform_execution = False\r\nphysical_time = 0\r\ndisplayed_time = None\r\ntime_step = None\r\nspace_objects = []\r\n\r\n\r\ndef execution(scale_factor):\r\n    \"\"\"\r\n    It is executed cyclically, causing the processing of all celestial bodies, updating their position on the screen.\r\n    \"\"\"\r\n    global physical_time\r\n    global displayed_time\r\n    model.recalculate_space_objects_positions(space_objects, time_step.get())\r\n    for body in space_objects:\r\n        vis.update_object_position(space, body, scale_factor)\r\n    physical_time += time_step.get()\r\n    displayed_time.set(\"%.1f\" % physical_time + \" seconds gone\")\r\n\r\n    if perform_execution:\r\n        space.after(101 - int(time_speed.get()), lambda: execution(scale_factor))\r\n\r\n\r\ndef start_execution(scale_factor):\r\n    \"\"\"Click event handler for the Start button.\r\n    Starts the cyclic execution of the execution function.\r\n    \"\"\"\r\n    global perform_execution\r\n    perform_execution = True\r\n    start_button['text'] = \"Pause\"\r\n    start_button['command'] = stop_execution\r\n\r\n    execution(scale_factor)\r\n    print('Started execution...')\r\n\r\n\r\ndef stop_execution(scale_factor):\r\n    \"\"\"Click event handler for the Start button.\r\n    Finishes the cyclic execution of the execution function.\r\n    \"\"\"\r\n    global perform_execution\r\n    perform_execution = False\r\n    start_button['text'] = \"Start\"\r\n    start_button['command'] = lambda: start_execution(scale_factor)\r\n    print('Paused execution.')\r\n\r\n\r\ndef open_file_dialog(scale_factor):\r\n    \"\"\"\r\n    Open dialog window, help to choose file, read the parameters\r\n    \"\"\"\r\n    global space_objects\r\n    global perform_execution\r\n    perform_execution = False\r\n    for obj in space_objects:\r\n        space.delete(obj.image)  # удаление старых изображений планет\r\n    in_filename = askopenfilename(filetypes=((\"Text file\", \".txt\"),))\r\n    space_objects = inputing.read_space_objects_data_from_file(in_filename)\r\n    max_distance = max([max(abs(obj.x), abs(obj.y)) for obj in space_objects])\r\n    vis.calculate_scale_factor(max_distance, scale_factor)\r\n\r\n    for obj in space_objects:\r\n        if obj.type == 'star':\r\n            vis.create_star_image(space, obj, scale_factor)\r\n        elif obj.type == 'planet':\r\n            vis.create_planet_image(space, obj, scale_factor)\r\n        else:\r\n            raise AssertionError()\r\n\r\n\r\ndef save_file_dialog():\r\n    \"\"\"\r\n    Open dialog window, help to choose file, save the parameters\r\n    \"\"\"\r\n    out_filename = asksaveasfilename(filetypes=((\"Text file\", \".txt\"),))\r\n    inputing.write_space_objects_data_to_file(out_filename, space_objects)\r\n\r\n\r\ndef main(scale_factor):\r\n    \"\"\"\r\n    Create graphic objects from tkinter: window, canvas, buttons\r\n    \"\"\"\r\n    global physical_time\r\n    global displayed_time\r\n    global time_step\r\n    global time_speed\r\n    global space\r\n    global start_button\r\n\r\n    physical_time = 0\r\n\r\n    root = tkinter.Tk()\r\n    space = tkinter.Canvas(root, width=vis.WINDOW_WIDTH, height=vis.WINDOW_HEIGHT, bg=\"black\")\r\n    space.pack(side=tkinter.TOP)\r\n\r\n    picture = tkinter.PhotoImage(file='cosmo.png')\r\n    space.create_image(20, 20, anchor=NW, image=picture)\r\n\r\n    frame = tkinter.Frame(root, bg='#565f9c')\r\n    frame.pack(side=tkinter.BOTTOM)\r\n\r\n    start_button = tkinter.Button(frame, text=\"Start\", command= lambda: start_execution(scale_factor), width=6, bg='#565f9c')\r\n    start_button.pack(side=tkinter.LEFT)\r\n\r\n    time_step = tkinter.DoubleVar()\r\n    time_step.set(1)\r\n    time_step_entry = tkinter.Entry(frame, textvariable=time_step, bg='#3a3d78')\r\n    time_step_entry.pack(side=tkinter.LEFT)\r\n\r\n    time_speed = tkinter.DoubleVar()\r\n    scale = tkinter.Scale(frame, variable=time_speed, orient=tkinter.HORIZONTAL, highlightcolor='#565f9c',\r\n                          highlightbackground='#565f9c', bg='#3a3d78', activebackground='#565f9c',\r\n                          troughcolor='#565f9c')\r\n    scale.pack(side=tkinter.LEFT)\r\n\r\n    load_file_button = tkinter.Button(frame, text=\"Open file...\", command= lambda: open_file_dialog(scale_factor), bg='#565f9c')\r\n    load_file_button.pack(side=tkinter.LEFT)\r\n    save_file_button = tkinter.Button(frame, text=\"Save to file...\", command= save_file_dialog, bg='#565f9c')\r\n    save_file_button.pack(side=tkinter.LEFT)\r\n\r\n    displayed_time = tkinter.StringVar()\r\n    displayed_time.set(str(physical_time) + \" seconds gone\")\r\n    time_label = tkinter.Label(frame, textvariable=displayed_time, width=30, bg='#3a3d78')\r\n    time_label.pack(side=tkinter.RIGHT)\r\n\r\n    root.mainloop()\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    scale_factor = vis.Scale_factor_in_class()\r\n    main(scale_factor)\r\n
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++diff --git a/solar_main.py b/solar_main.py
++--- a/solar_main.py	(revision e6c014866d687f016dc23e59fdc0fc826234db81)
+++++ b/solar_main.py	(date 1650979072500)
++@@ -6,129 +6,128 @@
++ import solar_model as model
++ import solar_vis as vis
++ 
++-perform_execution = False
++-physical_time = 0
++-displayed_time = None
++-time_step = None
++-space_objects = []
+++
++ 
+++class Important_values:
++ 
++-def execution(scale_factor):
+++    def __init__(self):
+++        self.perform_execution = False
+++        self.physical_time = 0
+++        self.time_step = None
+++        self.space_objects = []
+++        self.physical_time = 0
+++        self.displayed_time = None
+++        self.load_file_button = 0
+++        self.save_file_button = 0
+++        self.time_speed = 0
+++
+++        self.space = 0
+++
+++def execution(scale_factor, important_values_class):
++     """
++     It is executed cyclically, causing the processing of all celestial bodies, updating their position on the screen.
++     """
++-    global physical_time
++-    global displayed_time
++-    model.recalculate_space_objects_positions(space_objects, time_step.get())
++-    for body in space_objects:
++-        vis.update_object_position(space, body, scale_factor)
++-    physical_time += time_step.get()
++-    displayed_time.set("%.1f" % physical_time + " seconds gone")
+++    important_values_class.space_objects = model.recalculate_space_objects_positions(important_values_class.space_objects, important_values_class.time_step.get())
+++    for body in important_values_class.space_objects:
+++        vis.update_object_position(important_values_class.space, body, scale_factor)
+++    important_values_class.physical_time += important_values_class.time_step.get()
+++    important_values_class.displayed_time.set("%.1f" % important_values_class.physical_time + " seconds gone")
++ 
++-    if perform_execution:
++-        space.after(101 - int(time_speed.get()), lambda: execution(scale_factor))
+++    if important_values_class.perform_execution:
+++        important_values_class.space.after(101 - int(important_values_class.time_speed.get()), lambda: execution(scale_factor, important_values_class))
++ 
++ 
++-def start_execution(scale_factor):
+++def start_execution(scale_factor, important_values_class):
++     """Click event handler for the Start button.
++     Starts the cyclic execution of the execution function.
++     """
++-    global perform_execution
++-    perform_execution = True
++-    start_button['text'] = "Pause"
++-    start_button['command'] = stop_execution
++ 
++-    execution(scale_factor)
+++    important_values_class.perform_execution = True
+++    important_values_class.start_button['text'] = "Pause"
+++    important_values_class.start_button['command'] = lambda: stop_execution(important_values_class, scale_factor)
+++
+++    execution(scale_factor, important_values_class)
++     print('Started execution...')
++ 
++ 
++-def stop_execution(scale_factor):
+++def stop_execution(important_values_class, scale_factor):
++     """Click event handler for the Start button.
++     Finishes the cyclic execution of the execution function.
++     """
++-    global perform_execution
++-    perform_execution = False
++-    start_button['text'] = "Start"
++-    start_button['command'] = lambda: start_execution(scale_factor)
+++    important_values_class.perform_execution = False
+++    important_values_class.start_button['text'] = "Start"
+++    important_values_class.start_button['command'] = lambda: start_execution(scale_factor, important_values_class)
++     print('Paused execution.')
++ 
++ 
++-def open_file_dialog(scale_factor):
+++def open_file_dialog(scale_factor, important_values_class):
++     """
++     Open dialog window, help to choose file, read the parameters
++     """
++-    global space_objects
++-    global perform_execution
++-    perform_execution = False
++-    for obj in space_objects:
++-        space.delete(obj.image)  # удаление старых изображений планет
+++    important_values_class.perform_execution = False
+++    for obj in important_values_class.space_objects:
+++        important_values_class.space.delete(obj.image)
++     in_filename = askopenfilename(filetypes=(("Text file", ".txt"),))
++-    space_objects = inputing.read_space_objects_data_from_file(in_filename)
++-    max_distance = max([max(abs(obj.x), abs(obj.y)) for obj in space_objects])
+++    important_values_class.space_objects = inputing.read_space_objects_data_from_file(in_filename)
+++    max_distance = max([max(abs(obj.x), abs(obj.y)) for obj in important_values_class.space_objects])
++     vis.calculate_scale_factor(max_distance, scale_factor)
++ 
++-    for obj in space_objects:
+++    for obj in important_values_class.space_objects:
++         if obj.type == 'star':
++-            vis.create_star_image(space, obj, scale_factor)
+++            vis.create_star_image(important_values_class.space, obj, scale_factor)
++         elif obj.type == 'planet':
++-            vis.create_planet_image(space, obj, scale_factor)
+++            vis.create_planet_image(important_values_class.space, obj, scale_factor)
++         else:
++             raise AssertionError()
++ 
++ 
++-def save_file_dialog():
+++def save_file_dialog(important_values_class):
++     """
++     Open dialog window, help to choose file, save the parameters
++     """
++     out_filename = asksaveasfilename(filetypes=(("Text file", ".txt"),))
++-    inputing.write_space_objects_data_to_file(out_filename, space_objects)
+++    inputing.write_space_objects_data_to_file(out_filename, important_values_class.space_objects)
++ 
++ 
++-def main(scale_factor):
+++def main(scale_factor, important_values_class):
++     """
++     Create graphic objects from tkinter: window, canvas, buttons
++     """
++-    global physical_time
++-    global displayed_time
++-    global time_step
++-    global time_speed
++-    global space
++-    global start_button
++ 
++     physical_time = 0
++ 
++     root = tkinter.Tk()
++-    space = tkinter.Canvas(root, width=vis.WINDOW_WIDTH, height=vis.WINDOW_HEIGHT, bg="black")
++-    space.pack(side=tkinter.TOP)
+++    important_values_class.space = tkinter.Canvas(root, width=vis.WINDOW_WIDTH, height=vis.WINDOW_HEIGHT, bg="black")
+++    important_values_class.space.pack(side=tkinter.TOP)
++ 
++     picture = tkinter.PhotoImage(file='cosmo.png')
++-    space.create_image(20, 20, anchor=NW, image=picture)
+++    important_values_class.space.create_image(20, 20, anchor=NW, image=picture)
++ 
++     frame = tkinter.Frame(root, bg='#565f9c')
++     frame.pack(side=tkinter.BOTTOM)
++ 
++-    start_button = tkinter.Button(frame, text="Start", command= lambda: start_execution(scale_factor), width=6, bg='#565f9c')
++-    start_button.pack(side=tkinter.LEFT)
+++    important_values_class.start_button = tkinter.Button(frame, text="Start", command= lambda: start_execution(scale_factor, important_values_class), width=6, bg='#565f9c')
+++    important_values_class.start_button.pack(side=tkinter.LEFT)
++ 
++-    time_step = tkinter.DoubleVar()
++-    time_step.set(1)
++-    time_step_entry = tkinter.Entry(frame, textvariable=time_step, bg='#3a3d78')
+++    important_values_class.time_step = tkinter.DoubleVar()
+++    important_values_class.time_step.set(1)
+++    time_step_entry = tkinter.Entry(frame, textvariable=important_values_class.time_step, bg='#3a3d78')
++     time_step_entry.pack(side=tkinter.LEFT)
++ 
++-    time_speed = tkinter.DoubleVar()
++-    scale = tkinter.Scale(frame, variable=time_speed, orient=tkinter.HORIZONTAL, highlightcolor='#565f9c',
+++    important_values_class.time_speed = tkinter.DoubleVar()
+++    scale = tkinter.Scale(frame, variable=important_values_class.time_speed, orient=tkinter.HORIZONTAL, highlightcolor='#565f9c',
++                           highlightbackground='#565f9c', bg='#3a3d78', activebackground='#565f9c',
++                           troughcolor='#565f9c')
++     scale.pack(side=tkinter.LEFT)
++ 
++-    load_file_button = tkinter.Button(frame, text="Open file...", command= lambda: open_file_dialog(scale_factor), bg='#565f9c')
+++    load_file_button = tkinter.Button(frame, text="Open file...", command= lambda: open_file_dialog(scale_factor, important_values_class), bg='#565f9c')
++     load_file_button.pack(side=tkinter.LEFT)
++-    save_file_button = tkinter.Button(frame, text="Save to file...", command= save_file_dialog, bg='#565f9c')
+++    save_file_button = tkinter.Button(frame, text="Save to file...", command= lambda: save_file_dialog(important_values_class), bg='#565f9c')
++     save_file_button.pack(side=tkinter.LEFT)
++ 
++-    displayed_time = tkinter.StringVar()
++-    displayed_time.set(str(physical_time) + " seconds gone")
++-    time_label = tkinter.Label(frame, textvariable=displayed_time, width=30, bg='#3a3d78')
+++    important_values_class.displayed_time = tkinter.StringVar()
+++    important_values_class.displayed_time.set(str(physical_time) + " seconds gone")
+++    time_label = tkinter.Label(frame, textvariable=important_values_class.displayed_time, width=30, bg='#3a3d78')
++     time_label.pack(side=tkinter.RIGHT)
++ 
++     root.mainloop()
++@@ -136,4 +135,5 @@
++ 
++ if __name__ == "__main__":
++     scale_factor = vis.Scale_factor_in_class()
++-    main(scale_factor)
+++    imp = Important_values()
+++    main(scale_factor, imp)
