@@ -13,6 +13,7 @@ class Scale_factor_in_class:
 Type: float
 Measure: number of pixels per meter."""
 
+
 #
 def calculate_scale_factor(max_distance, scale_factor):
     """

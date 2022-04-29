@@ -19,6 +19,7 @@ def calculate_force(body, space_objects):
         body.Fx += (GRAVITATION_CONSTANT * (body.m * obj.m) / r ** 3 * rx)
         body.Fy += (GRAVITATION_CONSTANT * (body.m * obj.m) / r ** 3 * ry)
 
+
 #
 def move_space_object(body, dt):
     """
@@ -60,6 +61,7 @@ def recalculate_space_objects_positions(space_objects, dt):
     for body in space_objects:
         move_space_object(body, dt)
     return space_objects
+
 
 if __name__ == "__main__":
     print("This module is not for direct call!")
